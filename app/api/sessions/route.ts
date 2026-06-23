@@ -5,6 +5,8 @@ const HAS_SUPABASE =
   !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+const FREE_SESSION_LIMIT = 3;
+
 export async function POST(request: Request) {
   // Sandbox: return a predictable demo session immediately
   if (SANDBOX || !HAS_SUPABASE) {
@@ -21,6 +23,21 @@ export async function POST(request: Request) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Enforce free tier limit before touching formData
+    const service = createServiceClient();
+    const { count: sessionsUsed } = await service
+      .from("sessions")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .in("status", ["complete", "generating", "analyzing"]);
+
+    if ((sessionsUsed ?? 0) >= FREE_SESSION_LIMIT) {
+      return Response.json(
+        { error: "free_limit_reached", sessionsUsed: sessionsUsed ?? 0 },
+        { status: 402 }
+      );
+    }
+
     const formData = await request.formData();
     const front = formData.get("front") as File | null;
     const left = formData.get("left") as File | null;
@@ -31,7 +48,6 @@ export async function POST(request: Request) {
     }
 
     // Create session record
-    const service = createServiceClient();
     const { data: session, error: sessionErr } = await service
       .from("sessions")
       .insert({ user_id: user.id, status: "uploading" })
