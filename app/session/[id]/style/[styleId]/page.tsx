@@ -23,6 +23,7 @@ export default function ComparePage() {
   const draggingRef = useRef(false);
   const [beforeUrl, setBeforeUrl] = useState<string | null>(null);
   const [afterUrl, setAfterUrl] = useState<string | null>(null);
+  const [showBarber, setShowBarber] = useState(false);
 
   const styleIdx = STYLES.findIndex(s => s.id === styleId);
   const style = STYLES[styleIdx] ?? STYLES[0];
@@ -36,7 +37,6 @@ export default function ComparePage() {
     const fetchImages = async () => {
       const supabase = createClient();
 
-      // Generated style image
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: styleRow } = await (supabase as any)
         .from("session_styles")
@@ -47,7 +47,6 @@ export default function ComparePage() {
 
       if (styleRow?.image_url) setAfterUrl(styleRow.image_url);
 
-      // Front photo (signed URL from uploads bucket)
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: signed } = await supabase.storage
@@ -80,13 +79,56 @@ export default function ComparePage() {
   // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (showBarber) { setShowBarber(false); return; }
       if (e.key === "ArrowRight") router.push(`/session/${id}/style/${nextStyle.id}`);
       if (e.key === "ArrowLeft")  router.push(`/session/${id}/style/${prevStyle.id}`);
       if (e.key === "Escape")     router.push(`/session/${id}`);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [id, router, nextStyle.id, prevStyle.id]);
+  }, [id, router, nextStyle.id, prevStyle.id, showBarber]);
+
+  // ── Show Barber full-screen overlay ──────────────────────────────────────
+  if (showBarber) {
+    return (
+      <AppShell>
+      <div
+        onClick={() => setShowBarber(false)}
+        style={{
+          position: "fixed", inset: 0, zIndex: 100,
+          background: "#000",
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          cursor: "pointer",
+        }}
+      >
+        {/* Image fills screen */}
+        <div style={{ position: "relative", width: "100%", flex: 1 }}>
+          {afterUrl ? (
+            <Image src={afterUrl} alt={style.name} fill style={{ objectFit: "contain" }} sizes="390px" />
+          ) : (
+            <div style={{ position: "absolute", inset: 0, background: stripeBg(style.hue), display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 160, height: 160, borderRadius: "50%", border: "2px solid rgba(255,255,255,.3)" }} />
+            </div>
+          )}
+        </div>
+
+        {/* Style name */}
+        <div style={{ padding: "18px 24px 32px", textAlign: "center", width: "100%" }}>
+          <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 22, color: "#f4f2fb", letterSpacing: "-.02em" }}>
+            {style.name}
+          </div>
+          <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#a78bfa", letterSpacing: ".08em", marginTop: 4 }}>
+            {style.tag}
+          </div>
+          <div style={{ fontSize: 12, color: "#6b6485", marginTop: 14 }}>
+            Show this screen to your barber · tap anywhere to close
+          </div>
+        </div>
+      </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
@@ -116,7 +158,7 @@ export default function ComparePage() {
           background: "repeating-linear-gradient(135deg,#23222a,#23222a 10px,#2b2a33 10px,#2b2a33 20px)",
         }}
       >
-        {/* Before layer (full width) */}
+        {/* Before layer */}
         <div style={{ position: "absolute", inset: 0 }}>
           {beforeUrl ? (
             <Image src={beforeUrl} alt="Before" fill style={{ objectFit: "cover" }} sizes="390px" />
@@ -127,7 +169,7 @@ export default function ComparePage() {
           )}
         </div>
         <div style={{ position: "absolute", left: 12, bottom: 14, fontFamily: "var(--font-space-mono)", fontSize: 10, letterSpacing: ".06em", background: "rgba(0,0,0,.5)", padding: "5px 9px", borderRadius: 8, color: "#cfcfd6", zIndex: 1 }}>
-          BEFORE · your photo
+          BEFORE
         </div>
 
         {/* After layer (clipped) */}
@@ -158,8 +200,11 @@ export default function ComparePage() {
       {/* Bottom actions */}
       <div style={{ padding: "16px 18px 22px", display: "flex", flexDirection: "column", gap: 11, flexShrink: 0, zIndex: 5 }}>
         <div style={{ display: "flex", gap: 11 }}>
-          <button style={{ flex: 1, height: 50, borderRadius: 13, background: "#181527", border: "1px solid #2a2540", fontWeight: 700, fontSize: 14, color: "#cdc6e3", cursor: "pointer" }}>
-            ↗ Share
+          <button
+            onClick={() => setShowBarber(true)}
+            style={{ flex: 1, height: 50, borderRadius: 13, background: "#181527", border: "1px solid #2a2540", fontWeight: 700, fontSize: 13, color: "#cdc6e3", cursor: "pointer" }}
+          >
+            ✂ Show Barber
           </button>
           <button style={{ flex: 1.4, height: 50, borderRadius: 13, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", fontWeight: 700, fontSize: 14, color: "#fff", border: "none", cursor: "pointer", boxShadow: "0 12px 26px -10px rgba(124,58,237,.8)" }}>
             ♡ Save look

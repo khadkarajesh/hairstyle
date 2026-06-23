@@ -114,8 +114,13 @@ export default function UploadPage() {
           })}
         </div>
 
+        {/* Privacy note */}
+        <p style={{ fontSize: 11, color: "#6b6485", textAlign: "center", marginTop: 18, lineHeight: 1.5 }}>
+          Photos are processed securely and not stored beyond your session.
+        </p>
+
         {/* Buttons */}
-        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 11 }}>
+        <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 11 }}>
           <button
             onClick={() => openPicker("front")}
             style={{ height: 52, borderRadius: 14, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontWeight: 700, fontSize: 15, color: "#fff", border: "none", cursor: "pointer", width: "100%", boxShadow: "0 12px 26px -10px rgba(124,58,237,.8)" }}

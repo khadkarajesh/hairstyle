@@ -1,14 +1,14 @@
 export const STYLES = [
-  { id: "textured_crop",  name: "Textured Crop",   tag: "MID FADE",     hue: 292 },
-  { id: "side_part",      name: "Side Part",        tag: "CLASSIC",      hue: 278 },
-  { id: "pompadour",      name: "Pompadour",        tag: "HIGH VOLUME",  hue: 312 },
-  { id: "curtain_fringe", name: "Curtain Fringe",   tag: "SOFT",         hue: 330 },
-  { id: "buzz_cut",       name: "Buzz Cut",         tag: "CLEAN",        hue: 260 },
-  { id: "slick_back",     name: "Slick Back",       tag: "SHARP",        hue: 300 },
+  { id: "comma_hair",     name: "Comma Hair",       tag: "K-POP",        hue: 270 },
+  { id: "curtain_fringe", name: "Curtain Fringe",   tag: "K-POP",        hue: 330 },
+  { id: "textured_crop",  name: "Textured Crop",    tag: "FOOTBALLER",   hue: 292 },
+  { id: "pompadour",      name: "Pompadour",        tag: "BOLLYWOOD",    hue: 312 },
+  { id: "slick_back",     name: "Slick Back",       tag: "BOLLYWOOD",    hue: 300 },
   { id: "quiff",          name: "Quiff",            tag: "MODERN",       hue: 286 },
-  { id: "crew_cut",       name: "Crew Cut",         tag: "LOW TAPER",    hue: 24  },
+  { id: "side_part",      name: "Side Part",        tag: "PROFESSIONAL", hue: 278 },
+  { id: "crew_cut",       name: "Crew Cut",         tag: "PROFESSIONAL", hue: 24  },
+  { id: "buzz_cut",       name: "Buzz Cut",         tag: "CLEAN CUT",    hue: 260 },
   { id: "wavy_fringe",    name: "Wavy Fringe",      tag: "NATURAL",      hue: 350 },
-  { id: "comma_hair",     name: "Comma Hair",       tag: "KOREAN",       hue: 270 },
 ] as const;
 
 export type StyleItem = (typeof STYLES)[number];

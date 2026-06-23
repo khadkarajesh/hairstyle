@@ -55,6 +55,7 @@ export default function ResultsPage() {
             10 looks, just for you
           </h1>
           <p style={{ fontSize: 13, color: "#9b94b8", marginTop: 4 }}>Tap any look to compare with your photo.</p>
+          <p style={{ fontSize: 11, color: "#6b6485", marginTop: 6, fontStyle: "italic" }}>Style inspiration — results vary by hair type and barber skill.</p>
         </div>
 
         {/* 2-col grid */}
