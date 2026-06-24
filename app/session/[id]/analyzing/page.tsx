@@ -2,12 +2,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
-import { STYLES } from "@/lib/styles-data";
 
 const STEPS_INITIAL = [
-  { label: "Face shape detected",   done: false,   active: false },
-  { label: "Matching 10 styles…",   done: false,   active: false },
-  { label: "Rendering previews",    done: false,   active: false },
+  { label: "Face shape detected",    done: false, active: false },
+  { label: "Selecting your styles…", done: false, active: false },
 ];
 
 const SANDBOX = process.env.NEXT_PUBLIC_SANDBOX === "true";
@@ -20,23 +18,17 @@ export default function AnalyzingPage() {
 
   useEffect(() => {
     if (SANDBOX || id === "demo") {
-      // Sandbox: mock progress then redirect
       setSteps(s => s.map((st, i) => i === 0 ? { ...st, active: true } : st));
       const t1 = setTimeout(() => setSteps(s => s.map((st, i) =>
         i === 0 ? { ...st, done: true, active: false } :
         i === 1 ? { ...st, active: true } : st
       )), 1200);
-      const t2 = setTimeout(() => setSteps(s => s.map((st, i) =>
-        i === 1 ? { ...st, done: true, active: false } :
-        i === 2 ? { ...st, active: true } : st
-      )), 2800);
-      const t3 = setTimeout(() => router.replace(`/session/${id}`), 4000);
+      const t2 = setTimeout(() => setSteps(s => s.map(st => ({ ...st, done: true, active: false }))), 2400);
+      const t3 = setTimeout(() => router.replace(`/session/${id}`), 2800);
       return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     }
 
-    // Production: consume SSE from the process route
     let cancelled = false;
-    let stylesCount = 0;
     const dec = new TextDecoder();
 
     const start = async () => {
@@ -67,12 +59,7 @@ export default function AnalyzingPage() {
           for (const line of lines) {
             if (!line.startsWith("data: ")) continue;
             try {
-              const evt = JSON.parse(line.slice(6)) as {
-                step: string;
-                faceShape?: string;
-                styleId?: string;
-                imageUrl?: string | null;
-              };
+              const evt = JSON.parse(line.slice(6)) as { step: string };
 
               switch (evt.step) {
                 case "analyzing":
@@ -84,19 +71,9 @@ export default function AnalyzingPage() {
                     i === 1 ? { ...st, active: true } : st
                   ));
                   break;
-                case "generating":
-                  setSteps(s => s.map((st, i) => i === 2 ? { ...st, active: true } : st));
-                  break;
-                case "style_done":
-                case "style_failed":
-                  stylesCount++;
-                  setSteps(s => s.map((st, i) =>
-                    i === 1 ? { ...st, label: `Matching styles… (${stylesCount}/${STYLES.length})` } : st
-                  ));
-                  break;
                 case "complete":
                   setSteps(s => s.map(st => ({ ...st, done: true, active: false })));
-                  setTimeout(() => router.replace(`/session/${id}`), 600);
+                  setTimeout(() => router.replace(`/session/${id}`), 400);
                   break;
                 case "error":
                   router.replace(`/session/${id}`);
@@ -106,7 +83,6 @@ export default function AnalyzingPage() {
           }
         }
       } catch {
-        // stream cancelled or network error
         if (!cancelled) router.replace(`/session/${id}`);
       }
     };
@@ -140,7 +116,7 @@ export default function AnalyzingPage() {
 
       <h1 style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 25, letterSpacing: "-.02em", marginTop: 30 }}>Reading your face…</h1>
       <p style={{ fontSize: 13, color: "#9b94b8", marginTop: 8, maxWidth: 250, lineHeight: 1.45 }}>
-        Hang tight — we&apos;re matching styles to your face shape and rendering 10 looks.
+        Hang tight — we&apos;re analysing your face shape and picking personalised styles.
       </p>
 
       {/* Progress bar */}
@@ -167,7 +143,7 @@ export default function AnalyzingPage() {
       </div>
 
       <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 11, color: "#6b6485", marginTop: 26, letterSpacing: ".05em" }}>
-        USUALLY ~60 SECONDS
+        USUALLY ~10 SECONDS
       </div>
 
     </div>

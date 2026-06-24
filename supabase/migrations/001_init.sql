@@ -29,18 +29,20 @@ create policy "users_own_styles" on session_styles
     session_id in (select id from sessions where user_id = auth.uid())
   );
 
--- ── Storage buckets (run once in Supabase SQL editor) ─────────────────────────
--- insert into storage.buckets (id, name, public) values ('uploads', 'uploads', false);
--- insert into storage.buckets (id, name, public) values ('results', 'results', false);
---
--- create policy "users_upload" on storage.objects for insert
---   with check (bucket_id = 'uploads' and auth.uid()::text = (storage.foldername(name))[1]);
---
--- create policy "users_read_uploads" on storage.objects for select
---   using (bucket_id = 'uploads' and auth.uid()::text = (storage.foldername(name))[1]);
---
--- create policy "service_write_results" on storage.objects for insert
---   with check (bucket_id = 'results');
---
--- create policy "users_read_results" on storage.objects for select
---   using (bucket_id = 'results' and auth.uid()::text = (storage.foldername(name))[1]);
+-- ── Storage buckets ───────────────────────────────────────────────────────────
+insert into storage.buckets (id, name, public) values ('uploads', 'uploads', false)
+  on conflict (id) do nothing;
+insert into storage.buckets (id, name, public) values ('results', 'results', false)
+  on conflict (id) do nothing;
+
+create policy "users_upload" on storage.objects for insert
+  with check (bucket_id = 'uploads' and auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "users_read_uploads" on storage.objects for select
+  using (bucket_id = 'uploads' and auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "service_write_results" on storage.objects for insert
+  with check (bucket_id = 'results');
+
+create policy "users_read_results" on storage.objects for select
+  using (bucket_id = 'results' and auth.uid()::text = (storage.foldername(name))[1]);

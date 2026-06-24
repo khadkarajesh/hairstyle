@@ -38,9 +38,9 @@ export default function LandingPage() {
             <Link href="/login" style={{ background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", padding: "16px 28px", borderRadius: 13, fontWeight: 700, fontSize: 16, color: "#fff", textDecoration: "none", boxShadow: "0 16px 32px -12px rgba(124,58,237,.85)", display: "inline-block", whiteSpace: "nowrap" }}>
               Try 3 free sessions →
             </Link>
-            <button style={{ padding: "16px 26px", borderRadius: 13, fontWeight: 700, fontSize: 16, border: "1px solid #2a2540", color: "#cdc6e3", background: "transparent", cursor: "pointer", whiteSpace: "nowrap" }}>
-              Watch a demo
-            </button>
+            <a href="#how" style={{ padding: "16px 26px", borderRadius: 13, fontWeight: 700, fontSize: 16, border: "1px solid #2a2540", color: "#cdc6e3", background: "transparent", cursor: "pointer", whiteSpace: "nowrap", textDecoration: "none", display: "inline-block" }}>
+              See how it works ↓
+            </a>
           </div>
           <div className="l-hero-trust">
             NO CARD · PHOTOS DELETED IN 24H · KHALTI SECURED

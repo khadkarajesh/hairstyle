@@ -90,11 +90,16 @@ function UpgradeContent() {
 
         {/* CTA */}
         <div style={{ marginTop: "auto", paddingTop: 20, display: "flex", flexDirection: "column", gap: 9 }}>
-          <button style={{ height: 52, borderRadius: 14, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", gap: 9, fontWeight: 700, fontSize: 15, color: "#fff", border: "none", cursor: "pointer", width: "100%", boxShadow: "0 12px 26px -10px rgba(124,58,237,.8)" }}>
+          <a
+            href="https://wa.me/977XXXXXXXXXX?text=I%20want%20to%20upgrade%20HairStyle%20AI"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ height: 52, borderRadius: 14, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", gap: 9, fontWeight: 700, fontSize: 15, color: "#fff", textDecoration: "none", boxShadow: "0 12px 26px -10px rgba(124,58,237,.8)" }}
+          >
             Continue with Khalti →
-          </button>
+          </a>
           <div style={{ textAlign: "center", fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#6b6485" }}>
-            SECURE · KHALTI WALLET &amp; CARD · CANCEL ANYTIME
+            PAYMENT LAUNCHING SOON · CONTACT US ON WHATSAPP TO PAY
           </div>
         </div>
 

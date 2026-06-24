@@ -10,6 +10,8 @@ export interface Session {
   user_id: string;
   status: SessionStatus;
   face_shape: string | null;
+  selected_styles: string[] | null;
+  hair_attributes: Record<string, string> | null;
   created_at: string;
 }
 
@@ -18,6 +20,8 @@ export interface SessionStyle {
   session_id: string;
   style_id: string;
   image_url: string | null;
+  image_url_left: string | null;
+  image_url_right: string | null;
   saved: boolean;
   created_at: string;
 }
@@ -32,6 +36,8 @@ export interface Database {
           user_id: string;
           status: string;
           face_shape: string | null;
+          selected_styles: string[] | null;
+          hair_attributes: Record<string, string> | null;
           created_at: string;
         };
         Insert: {
@@ -39,6 +45,8 @@ export interface Database {
           user_id: string;
           status?: string;
           face_shape?: string | null;
+          selected_styles?: string[] | null;
+          hair_attributes?: Record<string, string> | null;
           created_at?: string;
         };
         Update: {
@@ -46,6 +54,8 @@ export interface Database {
           user_id?: string;
           status?: string;
           face_shape?: string | null;
+          selected_styles?: string[] | null;
+          hair_attributes?: Record<string, string> | null;
           created_at?: string;
         };
         Relationships: [];
@@ -56,6 +66,8 @@ export interface Database {
           session_id: string;
           style_id: string;
           image_url: string | null;
+          image_url_left: string | null;
+          image_url_right: string | null;
           saved: boolean;
           created_at: string;
         };
@@ -64,6 +76,8 @@ export interface Database {
           session_id: string;
           style_id: string;
           image_url?: string | null;
+          image_url_left?: string | null;
+          image_url_right?: string | null;
           saved?: boolean;
           created_at?: string;
         };
@@ -72,6 +86,8 @@ export interface Database {
           session_id?: string;
           style_id?: string;
           image_url?: string | null;
+          image_url_left?: string | null;
+          image_url_right?: string | null;
           saved?: boolean;
           created_at?: string;
         };

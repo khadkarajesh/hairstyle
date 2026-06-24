@@ -1,7 +1,6 @@
 "use client";
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { createClient } from "@/lib/supabase/client";
 
@@ -10,16 +9,22 @@ const HAS_SUPABASE =
   !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "/upload";
+
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
+  const callbackUrl = () =>
+    `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}`;
+
   const handleGoogle = async () => {
     if (SANDBOX || !HAS_SUPABASE) {
-      router.push("/upload");
+      router.push(next);
       return;
     }
     setLoading(true);
@@ -27,7 +32,7 @@ export default function LoginPage() {
     const supabase = createClient();
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+      options: { redirectTo: callbackUrl() },
     });
     if (err) {
       setError(err.message);
@@ -40,7 +45,7 @@ export default function LoginPage() {
     const trimmed = email.trim();
     if (!trimmed) return;
     if (SANDBOX || !HAS_SUPABASE) {
-      router.push("/upload");
+      router.push(next);
       return;
     }
     setLoading(true);
@@ -48,7 +53,7 @@ export default function LoginPage() {
     const supabase = createClient();
     const { error: err } = await supabase.auth.signInWithOtp({
       email: trimmed,
-      options: { emailRedirectTo: `${window.location.origin}/api/auth/callback` },
+      options: { emailRedirectTo: callbackUrl() },
     });
     setLoading(false);
     if (err) {
@@ -61,6 +66,7 @@ export default function LoginPage() {
   return (
     <AppShell>
     <div style={{ minHeight: "100dvh", background: "radial-gradient(120% 80% at 50% -10%, #1b1230 0%, #0f0d17 55%)", color: "#f4f2fb", fontFamily: "var(--font-hanken), sans-serif", display: "flex", flexDirection: "column" }}>
+
 
       {/* Status bar placeholder */}
       <div style={{ height: 44, flexShrink: 0 }} />
@@ -158,5 +164,13 @@ export default function LoginPage() {
       </div>
     </div>
     </AppShell>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   );
 }

@@ -1,10 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
-import OpenAI from "openai";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { STYLES, STYLE_PROMPTS } from "@/lib/styles-data";
+import { STYLES, STYLE_FACE_FIT } from "@/lib/styles-data";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 30; // analysis only — no longer needs 120s
 
 const SANDBOX = process.env.NEXT_PUBLIC_SANDBOX === "true";
 const HAS_SUPABASE =
@@ -22,18 +21,19 @@ export async function POST(
 ) {
   const { id } = await params;
 
-  // Sandbox / demo: stream a fake progress sequence
+  // Sandbox / demo: simulate analysis only
   if (SANDBOX || !HAS_SUPABASE || id === "demo") {
+    const mockStyles = ["comma_hair", "curtain_fringe", "textured_crop", "quiff", "side_part", "pompadour"];
     const stream = new ReadableStream({
       async start(ctrl) {
         ctrl.enqueue(sse({ step: "analyzing" }));
-        await sleep(1200);
-        ctrl.enqueue(sse({ step: "face_done", faceShape: "oval" }));
-        for (const s of STYLES) {
-          ctrl.enqueue(sse({ step: "generating", styleId: s.id }));
-          await sleep(300);
-          ctrl.enqueue(sse({ step: "style_done", styleId: s.id, imageUrl: null }));
-        }
+        await sleep(1500);
+        ctrl.enqueue(sse({
+          step: "face_done",
+          faceShape: "oval",
+          selectedStyles: mockStyles,
+          hairAttributes: { hair_type: "straight", hair_density: "medium", forehead: "medium", jaw: "medium", reasoning: "Oval face suits most styles — selected a balanced mix." },
+        }));
         ctrl.enqueue(sse({ step: "complete" }));
         ctrl.close();
       },
@@ -43,7 +43,7 @@ export async function POST(
     });
   }
 
-  // Production: real pipeline
+  // Production: analysis only
   const stream = new ReadableStream({
     async start(ctrl) {
       try {
@@ -57,7 +57,6 @@ export async function POST(
 
         const service = createServiceClient();
 
-        // Verify session ownership
         const { data: session } = await service
           .from("sessions")
           .select("id, user_id, status")
@@ -71,7 +70,7 @@ export async function POST(
           return;
         }
 
-        // ── Step 1: Analyze face shape with Claude ────────────────────────────
+        // ── Analyze photos + select styles with Claude ────────────────────────
         ctrl.enqueue(sse({ step: "analyzing" }));
 
         const [frontBuf, leftBuf, rightBuf] = await Promise.all([
@@ -83,7 +82,7 @@ export async function POST(
         const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
         const claudeRes = await anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 256,
+          max_tokens: 1024,
           messages: [{
             role: "user",
             content: [
@@ -92,74 +91,98 @@ export async function POST(
               imgContent(rightBuf),
               {
                 type: "text",
-                text: 'You are a professional hairstylist. Analyze these 3 photos (front, left profile, right profile). Identify the person\'s face shape. Respond ONLY with valid JSON: {"face_shape":"oval|round|square|heart|diamond|oblong"}',
+                text: `You are an expert hairstylist analyzing 3 photos (front, left profile, right profile) of a South Asian/Nepali man.
+
+Analyze these physical attributes:
+- face_shape: oval | round | square | heart | diamond | oblong
+- hair_type: straight | wavy | curly
+- hair_density: thin | medium | thick
+- forehead: low | medium | high
+- jaw: narrow | medium | wide
+
+Then select the styles that would GENUINELY suit this person from the catalog below.
+Select between 6 and 12 styles — only include styles that are a real good match. Do NOT force a fixed number.
+Order them from best-fit to acceptable-fit.
+
+Available style IDs:
+comma_hair - Korean comma hair, soft S-wave sweeping fringe
+curtain_fringe - Center-parted curtain bangs, medium length
+textured_crop - Choppy top with mid skin fade
+pompadour - Dramatic swept-back volume, high fade
+slick_back - All hair combed straight back, wet look
+quiff - Front volume swept up and back, faded sides
+side_part - Classic neat side parting, tapered sides
+crew_cut - Very short flat top, low skin fade
+buzz_cut - Uniform ultra-short all over (3-6mm)
+wavy_fringe - Natural wavy medium length, casual fringe
+undercut - Long top, shaved/very short sides with sharp line
+wolf_cut - Shaggy layered medium-long with curtain fringe
+french_crop - Short blunt horizontal fringe, tapered sides
+edgar_cut - Blunt straight fringe at hairline, mid fade
+middle_part - Center-parted, falls symmetrically to ears
+taper_fade - Gradual fade from top to skin at neckline
+modern_mullet - Short front, longer flowing back
+faux_hawk - Central raised ridge, faded sides
+disconnected_undercut - Hard shaved line disconnect, long top
+low_fade_comb_over - Side-combed top, low skin fade
+spiky_textured - Short irregular spikes, tapered sides
+bro_flow - Medium-long natural flowing hair, no fade
+korean_perm - Soft permed waves, medium length all over
+hard_part - Razor-shaved side parting line, combed top
+high_skin_fade - Extreme high fade starting above temples
+
+Respond ONLY with valid JSON:
+{
+  "face_shape": "oval|round|square|heart|diamond|oblong",
+  "hair_type": "straight|wavy|curly",
+  "hair_density": "thin|medium|thick",
+  "forehead": "low|medium|high",
+  "jaw": "narrow|medium|wide",
+  "selected_styles": ["style_id", ...],
+  "reasoning": "One sentence explaining key selection criteria"
+}`,
               },
             ],
           }],
         });
 
         let faceShape = "oval";
+        let selectedStyles: string[] = [];
+        let hairAttributes: Record<string, string> = {};
         try {
           const txt = claudeRes.content[0].type === "text" ? claudeRes.content[0].text : "{}";
           const parsed = JSON.parse(txt.match(/\{[\s\S]*\}/)?.[0] ?? "{}");
           if (parsed.face_shape) faceShape = parsed.face_shape;
-        } catch { /* fallback to oval */ }
+          if (Array.isArray(parsed.selected_styles) && parsed.selected_styles.length > 0) {
+            const validIds = new Set<string>(STYLES.map(s => s.id));
+            selectedStyles = (parsed.selected_styles as string[]).filter(sid => validIds.has(sid));
+          }
+          hairAttributes = {
+            hair_type:    parsed.hair_type    ?? "straight",
+            hair_density: parsed.hair_density ?? "medium",
+            forehead:     parsed.forehead     ?? "medium",
+            jaw:          parsed.jaw          ?? "medium",
+            reasoning:    parsed.reasoning    ?? "",
+          };
+        } catch { /* fallback below */ }
 
-        await service.from("sessions").update({ face_shape: faceShape, status: "generating" }).eq("id", id);
-        ctrl.enqueue(sse({ step: "face_done", faceShape }));
+        // Fallback: face-shape fit map
+        if (selectedStyles.length === 0) {
+          selectedStyles = STYLES
+            .filter(s => (STYLE_FACE_FIT[s.id] ?? []).includes(faceShape))
+            .map(s => s.id)
+            .slice(0, 10);
+          if (selectedStyles.length === 0) selectedStyles = STYLES.slice(0, 10).map(s => s.id);
+        }
 
-        // ── Step 2: Generate each hairstyle with gpt-image-1 ─────────────────
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        await service.from("sessions").update({
+          face_shape:      faceShape,
+          selected_styles: selectedStyles,
+          hair_attributes: hairAttributes,
+          status:          "complete",
+        }).eq("id", id);
 
-        await Promise.allSettled(
-          STYLES.map(async (style) => {
-            ctrl.enqueue(sse({ step: "generating", styleId: style.id }));
-            try {
-              const prompt = STYLE_PROMPTS[style.id] ?? `Apply ${style.name} hairstyle to this person, keeping all facial features unchanged.`;
-              const imgFile = new File([frontBuf as unknown as BlobPart], "face.jpg", { type: "image/jpeg" });
-
-              const genRes = await openai.images.edit({
-                model: "gpt-image-1",
-                image: imgFile,
-                prompt,
-                n: 1,
-                size: "1024x1024",
-              });
-
-              const b64 = genRes.data?.[0]?.b64_json;
-              if (!b64) throw new Error("No image data");
-
-              // Save to Supabase Storage
-              const resultPath = `${user.id}/${id}/${style.id}.png`;
-              const imgBytes = Buffer.from(b64, "base64");
-              await service.storage.from("results").upload(resultPath, imgBytes, {
-                contentType: "image/png",
-                upsert: true,
-              });
-
-              // Build a signed URL (1 year)
-              const { data: signed } = await service.storage
-                .from("results")
-                .createSignedUrl(resultPath, 60 * 60 * 24 * 365);
-
-              const imageUrl = signed?.signedUrl ?? null;
-
-              await service.from("session_styles").upsert({
-                session_id: id,
-                style_id: style.id,
-                image_url: imageUrl,
-              });
-
-              ctrl.enqueue(sse({ step: "style_done", styleId: style.id, imageUrl }));
-            } catch (err) {
-              console.error(`[generate] ${style.id}`, err);
-              ctrl.enqueue(sse({ step: "style_failed", styleId: style.id }));
-            }
-          })
-        );
-
-        // ── Done ──────────────────────────────────────────────────────────────
-        await service.from("sessions").update({ status: "complete" }).eq("id", id);
+        ctrl.enqueue(sse({ step: "face_done", faceShape, selectedStyles, hairAttributes }));
         ctrl.enqueue(sse({ step: "complete" }));
       } catch (err) {
         console.error("[process]", err);
