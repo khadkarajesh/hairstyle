@@ -1,10 +1,41 @@
 "use client";
 import { useRef, useState, useCallback, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { STYLES, STYLES_MAP, stripeBg } from "@/lib/styles-data";
 import { createClient } from "@/lib/supabase/client";
+
+function UpgradeModal({ feature, onClose }: { feature: string; onClose: () => void }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.7)", backdropFilter: "blur(2px)" }} />
+      <div style={{ position: "relative", background: "#15121f", borderRadius: "20px 20px 0 0", padding: "8px 24px 40px", border: "1px solid #2a2540", borderBottom: "none" }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: "#3a3358", margin: "12px auto 22px" }} />
+        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, boxShadow: "0 12px 26px -10px rgba(124,58,237,.7)" }}>✨</div>
+        <h2 style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 22, textAlign: "center", letterSpacing: "-.02em", margin: 0 }}>
+          {feature}
+        </h2>
+        <p style={{ fontSize: 14, color: "#9b94b8", textAlign: "center", marginTop: 10, lineHeight: 1.55, maxWidth: 280, margin: "10px auto 0" }}>
+          Upgrade to Standard to unlock this feature and get 3 fresh sessions every month.
+        </p>
+        <Link
+          href="/upgrade"
+          style={{ marginTop: 22, height: 52, borderRadius: 14, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, color: "#fff", textDecoration: "none", boxShadow: "0 12px 26px -10px rgba(124,58,237,.8)" }}
+        >
+          Upgrade to Standard — NPR 499/mo
+        </Link>
+        <button
+          onClick={onClose}
+          style={{ marginTop: 10, width: "100%", height: 46, borderRadius: 13, background: "transparent", border: "1px solid #2a2540", color: "#9b94b8", fontWeight: 600, fontSize: 14, cursor: "pointer" }}
+        >
+          Maybe later
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // Check if results page is already generating this style
 function isInflight(sessionId: string, styleId: string): boolean {
@@ -47,8 +78,12 @@ export default function ComparePage() {
   const [beforeUrls, setBeforeUrls] = useState<Record<Angle, string | null>>({ front: null, left: null, right: null });
   const [afterUrls, setAfterUrls]   = useState<Record<Angle, string | null>>({ front: null, left: null, right: null });
   const [generating, setGenerating] = useState<Record<Angle, boolean>>({ front: false, left: false, right: false });
-  const [isSaved, setIsSaved]       = useState(false);
+  const [isSaved, setIsSaved]         = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [sharing, setSharing]         = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [isPaid, setIsPaid]           = useState(SANDBOX); // unlocked in sandbox, locked until confirmed in prod
+  const [upgradePrompt, setUpgradePrompt] = useState<string | null>(null);
   const autoTriggeredRef = useRef(false);
 
   // Navigation uses the session's personalised style list; fall back to full catalog
@@ -97,6 +132,16 @@ export default function ComparePage() {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
+
+      // Check subscription plan to gate paid features
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: sub } = await (supabase as any)
+        .from("subscriptions")
+        .select("plan, active_until")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const paid = !!(sub?.active_until && new Date(sub.active_until) > new Date());
+      setIsPaid(paid);
 
       const angles: Angle[] = ["front", "left", "right"];
       const signed = await Promise.all(
@@ -194,6 +239,47 @@ export default function ComparePage() {
       setGenerating(g => ({ ...g, [angle]: false }));
     }
   }, [afterUrls, generating, id, styleId]);
+
+  const handleShare = useCallback(async () => {
+    const url = afterUrls[activeAngle];
+    if (!url || sharing) return;
+    setSharing(true);
+    try {
+      const sharePayload = {
+        title: `${style.name} · HairStyle AI`,
+        text: `Check out this hairstyle I'm thinking of getting — ${style.name}`,
+        url: window.location.href,
+      };
+
+      if (typeof navigator.share === "function") {
+        // Try sharing the actual image file first (works on mobile)
+        try {
+          const res = await fetch(url);
+          const blob = await res.blob();
+          const file = new File([blob], `${style.name.replace(/\s+/g, "_")}.jpg`, { type: "image/jpeg" });
+          if (navigator.canShare?.({ files: [file] })) {
+            await navigator.share({ files: [file], title: sharePayload.title, text: sharePayload.text });
+            return;
+          }
+        } catch { /* fall through to URL share */ }
+        await navigator.share(sharePayload);
+        return;
+      }
+
+      // Desktop fallback: copy link to clipboard
+      await navigator.clipboard.writeText(window.location.href);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2200);
+    } catch (err) {
+      if ((err as Error)?.name !== "AbortError") {
+        await navigator.clipboard.writeText(window.location.href).catch(() => {});
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2200);
+      }
+    } finally {
+      setSharing(false);
+    }
+  }, [afterUrls, activeAngle, sharing, style.name]);
 
   const handleAngleChange = useCallback((angle: Angle) => {
     setActiveAngle(angle);
@@ -403,11 +489,17 @@ export default function ComparePage() {
           return (
             <button
               key={angle}
-              onClick={() => handleAngleChange(angle)}
+              onClick={() => {
+                if (angle !== "front" && !isPaid) {
+                  setUpgradePrompt("Side angles are a Standard feature");
+                  return;
+                }
+                handleAngleChange(angle);
+              }}
               style={{
                 flex: 1, height: 32, borderRadius: 10, border: "none", cursor: "pointer",
                 background: active ? "linear-gradient(135deg,#8b5cf6,#7c3aed)" : "#15121f",
-                color: active ? "#fff" : "#6b6485",
+                color: active ? "#fff" : (angle !== "front" && !isPaid) ? "#3a3358" : "#6b6485",
                 fontFamily: "var(--font-space-mono)", fontSize: 9, letterSpacing: ".06em",
                 fontWeight: 700, transition: "all .15s",
                 outline: active ? "none" : "1px solid #2a2540",
@@ -415,7 +507,10 @@ export default function ComparePage() {
               }}
             >
               {ANGLE_LABELS[angle].toUpperCase()}
-              {angle !== "front" && (
+              {angle !== "front" && !isPaid && (
+                <span style={{ position: "absolute", top: 5, right: 6, fontSize: 8, color: "#3a3358" }}>🔒</span>
+              )}
+              {angle !== "front" && isPaid && (
                 <span style={{
                   position: "absolute", top: 5, right: 6,
                   width: 5, height: 5, borderRadius: "50%",
@@ -432,35 +527,55 @@ export default function ComparePage() {
 
       {/* Bottom actions */}
       <div style={{ padding: "14px 18px 22px", display: "flex", flexDirection: "column", gap: 11, flexShrink: 0 }}>
+        {/* "Link copied" toast */}
+        {shareCopied && (
+          <div style={{ position: "fixed", bottom: 110, left: "50%", transform: "translateX(-50%)", background: "#1e1a30", border: "1px solid #3a3358", borderRadius: 10, padding: "9px 18px", fontFamily: "var(--font-space-mono)", fontSize: 11, color: "#a78bfa", whiteSpace: "nowrap", zIndex: 50, boxShadow: "0 8px 24px rgba(0,0,0,.4)" }}>
+            Link copied to clipboard ✓
+          </div>
+        )}
+
         <div style={{ display: "flex", gap: 8 }}>
           <button
-            onClick={() => setShowBarber(true)}
+            onClick={() => {
+              if (!isPaid) { setUpgradePrompt("Show Barber is a Standard feature"); return; }
+              setShowBarber(true);
+            }}
             disabled={!afterUrl}
-            style={{ flex: 1, height: 50, borderRadius: 13, background: "#181527", border: "1px solid #2a2540", fontWeight: 700, fontSize: 12, color: afterUrl ? "#cdc6e3" : "#3a3358", cursor: afterUrl ? "pointer" : "default" }}
+            style={{ flex: 1, height: 50, borderRadius: 13, background: "#181527", border: "1px solid #2a2540", fontWeight: 700, fontSize: 12, color: afterUrl ? (isPaid ? "#cdc6e3" : "#6b6485") : "#3a3358", cursor: afterUrl ? "pointer" : "default", position: "relative" }}
           >
-            ✂ Show Barber
+            ✂ Show Barber{!isPaid && <span style={{ marginLeft: 4, fontSize: 10 }}>🔒</span>}
+          </button>
+          <button
+            onClick={handleShare}
+            disabled={!afterUrl || sharing}
+            style={{ width: 50, height: 50, borderRadius: 13, background: "#181527", border: "1px solid #2a2540", fontWeight: 700, fontSize: 17, color: afterUrl ? "#cdc6e3" : "#3a3358", cursor: afterUrl ? "pointer" : "default", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
+            title="Share"
+          >
+            {sharing ? "…" : "↗"}
           </button>
           <button
             onClick={async () => {
-              if (!afterUrl || SANDBOX || !HAS_SUPABASE) return;
+              if (!isPaid) { setUpgradePrompt("Download is a Standard feature"); return; }
+              if (!afterUrl) return;
               setDownloading(true);
               try {
                 const res = await fetch(afterUrl);
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
-                a.href = url; a.download = `${style.name.replace(/\s+/g, "_")}.png`; a.click();
+                a.href = url; a.download = `${style.name.replace(/\s+/g, "_")}.jpg`; a.click();
                 URL.revokeObjectURL(url);
               } finally { setDownloading(false); }
             }}
             disabled={!afterUrl || downloading}
-            style={{ width: 50, height: 50, borderRadius: 13, background: "#181527", border: "1px solid #2a2540", fontWeight: 700, fontSize: 16, color: afterUrl ? "#cdc6e3" : "#3a3358", cursor: afterUrl ? "pointer" : "default", flexShrink: 0 }}
-            title="Download image"
+            style={{ width: 50, height: 50, borderRadius: 13, background: "#181527", border: "1px solid #2a2540", fontWeight: 700, fontSize: isPaid ? 16 : 12, color: afterUrl ? (isPaid ? "#cdc6e3" : "#6b6485") : "#3a3358", cursor: afterUrl ? "pointer" : "default", flexShrink: 0 }}
+            title="Download"
           >
-            {downloading ? "…" : "↓"}
+            {downloading ? "…" : isPaid ? "↓" : "🔒"}
           </button>
           <button
             onClick={async () => {
+              if (!isPaid) { setUpgradePrompt("Save looks is a Standard feature"); return; }
               if (SANDBOX || !HAS_SUPABASE) return;
               const next = !isSaved;
               setIsSaved(next);
@@ -470,9 +585,9 @@ export default function ComparePage() {
                 body: JSON.stringify({ saved: next }),
               });
             }}
-            style={{ flex: 1.2, height: 50, borderRadius: 13, background: isSaved ? "linear-gradient(135deg,#8b5cf6,#7c3aed)" : "#181527", border: isSaved ? "none" : "1px solid #2a2540", fontWeight: 700, fontSize: 14, color: isSaved ? "#fff" : "#cdc6e3", cursor: "pointer", boxShadow: isSaved ? "0 12px 26px -10px rgba(124,58,237,.8)" : "none", transition: "all .2s" }}
+            style={{ flex: 1, height: 50, borderRadius: 13, background: isSaved ? "linear-gradient(135deg,#8b5cf6,#7c3aed)" : "#181527", border: isSaved ? "none" : "1px solid #2a2540", fontWeight: 700, fontSize: 14, color: isSaved ? "#fff" : (isPaid ? "#cdc6e3" : "#6b6485"), cursor: "pointer", boxShadow: isSaved ? "0 12px 26px -10px rgba(124,58,237,.8)" : "none", transition: "all .2s" }}
           >
-            {isSaved ? "♥ Saved" : "♡ Save"}
+            {isSaved ? "♥ Saved" : isPaid ? "♡ Save" : "🔒 Save"}
           </button>
         </div>
 
@@ -489,6 +604,10 @@ export default function ComparePage() {
       </div>
 
     </div>
+
+    {upgradePrompt && (
+      <UpgradeModal feature={upgradePrompt} onClose={() => setUpgradePrompt(null)} />
+    )}
     </AppShell>
   );
 }

@@ -11,7 +11,7 @@ import { stripeBg } from "@/lib/styles-data";
 const SANDBOX = process.env.NEXT_PUBLIC_SANDBOX === "true";
 const HAS_SUPABASE = !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const SESSION_LIMIT = 3; // free tier
+const SESSION_LIMIT = 1; // free tier
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "2-digit" }).toUpperCase();
@@ -93,13 +93,13 @@ export default function ProfilePage() {
         <div style={{ marginTop: 18, background: "#15121f", border: "1px solid #2a2540", borderRadius: 16, padding: 15 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
             <span style={{ fontSize: 13, color: "#9b94b8", fontWeight: 600 }}>Sessions used</span>
-            <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 12 }}>{sessionsUsed} / {SESSION_LIMIT} lifetime</span>
+            <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 12 }}>{sessionsUsed} / {SESSION_LIMIT} free session</span>
           </div>
           <div style={{ height: 6, borderRadius: 3, background: "#211d33", marginTop: 10, overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${usagePct}%`, background: "linear-gradient(90deg,#a78bfa,#7c3aed)", borderRadius: 3, transition: "width .4s ease" }} />
           </div>
           <Link href="/upgrade" style={{ marginTop: 13, height: 42, borderRadius: 11, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: "#fff", textDecoration: "none" }}>
-            Upgrade to Pro — NPR 399/mo
+            Upgrade to Standard — NPR 499/mo
           </Link>
         </div>
 

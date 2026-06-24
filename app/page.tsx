@@ -1,7 +1,22 @@
 import Link from "next/link";
 import { STYLES, stripeBg } from "@/lib/styles-data";
+import { createClient } from "@/lib/supabase/server";
 
-export default function LandingPage() {
+const HAS_SUPABASE = !!(
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
+export default async function LandingPage() {
+  let isLoggedIn = false;
+  if (HAS_SUPABASE) {
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      isLoggedIn = !!user;
+    } catch {}
+  }
+
   return (
     <div style={{ background: "#0f0d17", color: "#f4f2fb", fontFamily: "var(--font-hanken), sans-serif", minHeight: "100vh", maxWidth: "100vw", overflowX: "hidden" }}>
 
@@ -15,10 +30,15 @@ export default function LandingPage() {
           <div className="l-nav-links-text">
             <a href="#how" style={{ color: "#cdc6e3", textDecoration: "none" }}>How it works</a>
             <a href="#pricing" style={{ color: "#cdc6e3", textDecoration: "none" }}>Pricing</a>
-            <a href="#salons" style={{ color: "#cdc6e3", textDecoration: "none" }}>For salons</a>
-            <Link href="/login" className="l-nav-login" style={{ color: "#9b94b8", textDecoration: "none" }}>Log in</Link>
+{isLoggedIn
+              ? <Link href="/session/latest" className="l-nav-login" style={{ color: "#a78bfa", textDecoration: "none", fontWeight: 600 }}>My looks</Link>
+              : <Link href="/login" className="l-nav-login" style={{ color: "#9b94b8", textDecoration: "none" }}>Log in</Link>
+            }
           </div>
-          <Link href="/login" className="l-nav-cta" style={{ fontSize: 14 }}>Start free</Link>
+          {isLoggedIn
+            ? <Link href="/upload" className="l-nav-cta" style={{ fontSize: 14 }}>New session</Link>
+            : <Link href="/login" className="l-nav-cta" style={{ fontSize: 14 }}>Start free</Link>
+          }
         </div>
       </nav>
 
@@ -26,28 +46,41 @@ export default function LandingPage() {
       <section className="l-hero">
         <div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "var(--font-space-mono)", fontSize: 12, color: "#a78bfa", background: "#1c172b", border: "1px solid #2a2540", padding: "7px 13px", borderRadius: 99, letterSpacing: ".04em" }}>
-            🇳🇵 NEPAL · 2,400+ PROFESSIONALS
+            🇳🇵 MADE IN KATHMANDU · EARLY ACCESS
           </div>
           <h1 style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: "clamp(32px, 8.5vw, 62px)", letterSpacing: "-.03em", lineHeight: .98, margin: "22px 0 0", maxWidth: "100%" }}>
             See your next haircut before the scissors touch.
           </h1>
           <p style={{ fontSize: 18, color: "#9b94b8", margin: "22px 0 0", lineHeight: 1.5, maxWidth: "min(480px, 100%)" }}>
-            Upload 3 photos. Our AI renders 10 hairstyles on your actual face in 60 seconds. No more guessing. No more bad cuts.
+            Upload 3 photos. AI detects your face shape and renders up to 12 matching hairstyles on your actual face — in under a minute.
           </p>
           <div className="l-hero-btns" style={{ display: "flex", gap: 14, marginTop: 32 }}>
-            <Link href="/login" style={{ background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", padding: "16px 28px", borderRadius: 13, fontWeight: 700, fontSize: 16, color: "#fff", textDecoration: "none", boxShadow: "0 16px 32px -12px rgba(124,58,237,.85)", display: "inline-block", whiteSpace: "nowrap" }}>
-              Try 3 free sessions →
-            </Link>
-            <a href="#how" style={{ padding: "16px 26px", borderRadius: 13, fontWeight: 700, fontSize: 16, border: "1px solid #2a2540", color: "#cdc6e3", background: "transparent", cursor: "pointer", whiteSpace: "nowrap", textDecoration: "none", display: "inline-block" }}>
-              See how it works ↓
-            </a>
+            {isLoggedIn ? (
+              <>
+                <Link href="/upload" style={{ background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", padding: "16px 28px", borderRadius: 13, fontWeight: 700, fontSize: 16, color: "#fff", textDecoration: "none", boxShadow: "0 16px 32px -12px rgba(124,58,237,.85)", display: "inline-block", whiteSpace: "nowrap" }}>
+                  New session →
+                </Link>
+                <Link href="/session/latest" style={{ padding: "16px 26px", borderRadius: 13, fontWeight: 700, fontSize: 16, border: "1px solid #2a2540", color: "#cdc6e3", background: "transparent", whiteSpace: "nowrap", textDecoration: "none", display: "inline-block" }}>
+                  My looks ↗
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login" style={{ background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", padding: "16px 28px", borderRadius: 13, fontWeight: 700, fontSize: 16, color: "#fff", textDecoration: "none", boxShadow: "0 16px 32px -12px rgba(124,58,237,.85)", display: "inline-block", whiteSpace: "nowrap" }}>
+                  Try free — 1 session →
+                </Link>
+                <a href="#how" style={{ padding: "16px 26px", borderRadius: 13, fontWeight: 700, fontSize: 16, border: "1px solid #2a2540", color: "#cdc6e3", background: "transparent", cursor: "pointer", whiteSpace: "nowrap", textDecoration: "none", display: "inline-block" }}>
+                  See how it works ↓
+                </a>
+              </>
+            )}
           </div>
           <div className="l-hero-trust">
-            NO CARD · PHOTOS DELETED IN 24H · KHALTI SECURED
+            NO CARD NEEDED · 3 FREE SESSIONS · PHOTOS DELETED IN 24H
           </div>
         </div>
 
-        {/* Hero visual — hidden on mobile via CSS */}
+        {/* Hero visual */}
         <div className="l-hero-visual">
           <div style={{ position: "absolute", left: 0, top: 30, width: 210, height: 280, borderRadius: 18, overflow: "hidden", background: "repeating-linear-gradient(135deg,#23222a,#23222a 10px,#2b2a33 10px,#2b2a33 20px)", boxShadow: "0 24px 50px -18px rgba(0,0,0,.6)", border: "1px solid rgba(255,255,255,.06)" }}>
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -64,7 +97,7 @@ export default function LandingPage() {
           </div>
           <div style={{ position: "absolute", right: 60, bottom: 8, background: "#181527", border: "1px solid #2a2540", borderRadius: 13, padding: "11px 15px", boxShadow: "0 16px 30px -14px rgba(0,0,0,.6)" }}>
             <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#a78bfa" }}>RENDERED IN</div>
-            <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 22, letterSpacing: "-.02em" }}>58 sec</div>
+            <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 22, letterSpacing: "-.02em" }}>~60 sec</div>
           </div>
         </div>
       </section>
@@ -74,11 +107,11 @@ export default function LandingPage() {
         <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 12, color: "#a78bfa", letterSpacing: ".08em", textAlign: "center" }}>HOW IT WORKS</div>
         <h2 style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 38, letterSpacing: "-.025em", textAlign: "center", margin: "10px 0 0" }}>Three photos to certainty</h2>
         <div className="l-steps-grid">
-          {[
-            ["01", "Upload 3 photos", "Front, left, and right. A guided screen makes sure they're good enough for great results."],
-            ["02", "AI reads your face", "We detect your face shape and match the 10 styles most likely to suit you."],
-            ["03", "Compare & decide", "Swipe between your photo and each look. Save the winner. Show it to your barber."],
-          ].map(([num, title, desc]) => (
+          {([
+            ["01", "Upload 3 photos", "Front, left profile, and right profile. A guided screen shows you exactly how to frame each shot."],
+            ["02", "AI reads your face shape", "We detect your face shape and hair type, then select the 6–12 styles most likely to suit you."],
+            ["03", "Compare, save & show your barber", "Slide between your photo and each look. Save your favourite. Show the screen to your barber — no printing needed."],
+          ] as const).map(([num, title, desc]) => (
             <div key={num} style={{ background: "#15121f", border: "1px solid #2a2540", borderRadius: 18, padding: 26 }}>
               <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 30, color: "#a78bfa" }}>{num}</div>
               <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 700, fontSize: 19, marginTop: 14, letterSpacing: "-.01em" }}>{title}</div>
@@ -90,6 +123,7 @@ export default function LandingPage() {
 
       {/* Style showcase */}
       <section className="l-showcase-section">
+        <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 11, color: "#6b6485", letterSpacing: ".06em", marginBottom: 16, textAlign: "center" }}>{STYLES.length} STYLES AVAILABLE</div>
         <div className="l-showcase-grid">
           {STYLES.map(s => (
             <div key={s.id} style={{ position: "relative", borderRadius: 13, overflow: "hidden", aspectRatio: "3/4", background: stripeBg(s.hue), boxShadow: "inset 0 0 0 1px rgba(255,255,255,.06)" }}>
@@ -109,50 +143,41 @@ export default function LandingPage() {
       <section id="pricing" className="l-section">
         <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 12, color: "#a78bfa", letterSpacing: ".08em", textAlign: "center" }}>PRICING</div>
         <h2 style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 38, letterSpacing: "-.025em", textAlign: "center", margin: "10px 0 0" }}>Less than a bad haircut</h2>
-        <div className="l-pricing-grid">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 18, marginTop: 36, maxWidth: 720, margin: "36px auto 0" }}>
+
+          {/* Free */}
           <div style={{ background: "#15121f", border: "1px solid #2a2540", borderRadius: 18, padding: 28, display: "flex", flexDirection: "column" }}>
             <div style={{ fontWeight: 700, fontSize: 17 }}>Free</div>
             <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 38, letterSpacing: "-.02em", marginTop: 10 }}>NPR 0</div>
             <div style={{ fontSize: 13, color: "#9b94b8", marginTop: 6 }}>Try before you buy</div>
             <div style={{ height: 1, background: "#2a2540", margin: "20px 0" }} />
             <div style={{ display: "flex", flexDirection: "column", gap: 11, fontSize: 14, color: "#cdc6e3", flex: 1 }}>
-              <div>✓ 3 sessions, lifetime</div>
-              <div>✓ 30 previews total</div>
-              <div>✓ Compare & save</div>
+              <div>✓ 1 session, free forever</div>
+              <div>✓ Up to 12 styles per session</div>
+              <div>✓ Before/after comparison slider</div>
+              <div>✓ Save & show barber screen</div>
             </div>
             <Link href="/login" style={{ marginTop: 24, height: 46, borderRadius: 12, border: "1px solid #3a3358", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#cdc6e3", textDecoration: "none" }}>Start free</Link>
           </div>
+
+          {/* Standard — featured */}
           <div style={{ background: "linear-gradient(160deg,#241846,#15121f)", border: "1.5px solid #7c3aed", borderRadius: 18, padding: 28, display: "flex", flexDirection: "column", position: "relative", boxShadow: "0 24px 50px -22px rgba(124,58,237,.7)" }}>
             <div style={{ position: "absolute", top: -12, left: 28, fontFamily: "var(--font-space-mono)", fontSize: 10, background: "linear-gradient(135deg,#a78bfa,#7c3aed)", padding: "5px 11px", borderRadius: 8, fontWeight: 700 }}>MOST POPULAR</div>
-            <div style={{ fontWeight: 700, fontSize: 17 }}>Pro</div>
+            <div style={{ fontWeight: 700, fontSize: 17 }}>Standard</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 10 }}>
-              <span style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 38, letterSpacing: "-.02em" }}>NPR 399</span>
+              <span style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 38, letterSpacing: "-.02em" }}>NPR 499</span>
               <span style={{ fontSize: 13, color: "#cdc6e3" }}>/mo</span>
             </div>
-            <div style={{ fontSize: 13, color: "#cdbfff", marginTop: 6 }}>For individuals who care how they look</div>
+            <div style={{ fontSize: 13, color: "#cdbfff", marginTop: 6 }}>For anyone who cares how they look</div>
             <div style={{ height: 1, background: "#3a2f5a", margin: "20px 0" }} />
             <div style={{ display: "flex", flexDirection: "column", gap: 11, fontSize: 14, color: "#ece4ff", flex: 1 }}>
-              <div>✓ 10 sessions / month</div>
-              <div>✓ 100 previews / month</div>
-              <div>✓ Save, share & history</div>
-              <div>✓ Priority rendering</div>
+              <div>✓ 3 sessions / month</div>
+              <div>✓ Up to 12 styles per session</div>
+              <div>✓ Save looks & session history</div>
+              <div>✓ Show Barber screen</div>
+              <div>✓ Download your previews</div>
             </div>
-            <Link href="/upgrade" style={{ marginTop: 24, height: 46, borderRadius: 12, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff", textDecoration: "none", boxShadow: "0 12px 26px -10px rgba(124,58,237,.85)" }}>Go Pro</Link>
-          </div>
-          <div id="salons" style={{ background: "#15121f", border: "1px solid #2a2540", borderRadius: 18, padding: 28, display: "flex", flexDirection: "column" }}>
-            <div style={{ fontWeight: 700, fontSize: 17 }}>Salon</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 10 }}>
-              <span style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 38, letterSpacing: "-.02em" }}>NPR 2,999</span>
-              <span style={{ fontSize: 13, color: "#9b94b8" }}>/mo</span>
-            </div>
-            <div style={{ fontSize: 13, color: "#9b94b8", marginTop: 6 }}>A consultation tool for your chair</div>
-            <div style={{ height: 1, background: "#2a2540", margin: "20px 0" }} />
-            <div style={{ display: "flex", flexDirection: "column", gap: 11, fontSize: 14, color: "#cdc6e3", flex: 1 }}>
-              <div>✓ Unlimited sessions</div>
-              <div>✓ In-salon client previews</div>
-              <div>✓ Branded share cards</div>
-            </div>
-            <a href="mailto:hello@hairstyleai.com.np" style={{ marginTop: 24, height: 46, borderRadius: 12, border: "1px solid #3a3358", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#cdc6e3", textDecoration: "none" }}>Talk to us</a>
+            <Link href="/upgrade" style={{ marginTop: 24, height: 46, borderRadius: 12, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff", textDecoration: "none", boxShadow: "0 12px 26px -10px rgba(124,58,237,.85)" }}>Get Standard</Link>
           </div>
         </div>
       </section>
@@ -161,8 +186,8 @@ export default function LandingPage() {
       <div className="l-deal">
         <div>
           <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 12, color: "#fb7185", letterSpacing: ".06em" }}>LAUNCH OFFER · FIRST 100 ONLY</div>
-          <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 32, letterSpacing: "-.02em", marginTop: 10 }}>Lifetime Pro for NPR 1,999 — once.</div>
-          <div style={{ fontSize: 14, color: "#9b94b8", marginTop: 8 }}>Pay once, keep Pro forever. When 100 are gone, they&apos;re gone.</div>
+          <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 32, letterSpacing: "-.02em", marginTop: 10 }}>Lifetime Standard for NPR 1,999 — once.</div>
+          <div style={{ fontSize: 14, color: "#9b94b8", marginTop: 8 }}>Pay once, keep Standard forever. No renewals, no surprises.</div>
         </div>
         <div style={{ textAlign: "center", flexShrink: 0 }}>
           <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 46, letterSpacing: "-.02em", color: "#fb7185", lineHeight: 1 }}>41</div>
@@ -183,7 +208,12 @@ export default function LandingPage() {
         <div style={{ display: "flex", gap: 22 }}>
           <a href="#" style={{ color: "#6b6485", textDecoration: "none" }}>Privacy</a>
           <a href="#" style={{ color: "#6b6485", textDecoration: "none" }}>Terms</a>
-          <a href="#" style={{ color: "#6b6485", textDecoration: "none" }}>Contact</a>
+          <a
+            href="https://wa.me/977XXXXXXXXXX?text=Hi%2C%20I%20have%20a%20question%20about%20HairStyle%20AI"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "#6b6485", textDecoration: "none" }}
+          >Contact</a>
         </div>
       </footer>
     </div>

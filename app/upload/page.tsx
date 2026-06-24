@@ -17,7 +17,7 @@ const SANDBOX = process.env.NEXT_PUBLIC_SANDBOX === "true";
 const HAS_SUPABASE =
   !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const FREE_LIMIT = 3;
+const FREE_LIMIT = 1;
 
 function CameraModal({ onCapture, onClose }: { onCapture: (file: File) => void; onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -96,7 +96,7 @@ export default function UploadPage() {
   // Fetch how many sessions this user has used
   useEffect(() => {
     if (SANDBOX || !HAS_SUPABASE) {
-      setSessionsUsed(1); // demo: show 1 of 3 used
+      setSessionsUsed(0); // demo: show 0 of 1 used
       return;
     }
     const fetchCount = async () => {
@@ -209,7 +209,7 @@ export default function UploadPage() {
         {atLimit && (
           <div style={{ marginTop: 14, borderRadius: 12, background: "rgba(248,113,113,.1)", border: "1px solid rgba(248,113,113,.25)", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
             <div style={{ fontSize: 13, color: "#fca5a5", lineHeight: 1.4 }}>
-              You&apos;ve used all 3 free sessions.
+              You&apos;ve used your free session.
             </div>
             <Link href="/upgrade" style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#a78bfa", fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
               UPGRADE →

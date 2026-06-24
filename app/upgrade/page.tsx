@@ -26,7 +26,7 @@ function UpgradeContent() {
         </div>
         <h1 style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 28, letterSpacing: "-.025em", lineHeight: 1.05, marginTop: 10 }}>
           {hitLimit
-            ? <>Your 3 free<br />sessions are up.</>
+            ? <>Your free<br />session is up.</>
             : <>See more looks,<br />every month.</>}
         </h1>
         <p style={{ fontSize: 13, color: "#9b94b8", marginTop: 10, lineHeight: 1.5 }}>
@@ -68,7 +68,7 @@ function UpgradeContent() {
             <div style={{ flex: 1, borderRadius: 14, padding: 13, background: "#0f0d17", border: "1px solid #1e1a2e" }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: "#6b6485" }}>Free</div>
               <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 18, marginTop: 3, color: "#6b6485" }}>NPR 0</div>
-              <div style={{ fontSize: 11, color: "#4a4568", marginTop: 4 }}>3 sessions · once</div>
+              <div style={{ fontSize: 11, color: "#4a4568", marginTop: 4 }}>1 session · free forever</div>
             </div>
             <div style={{ flex: 1, borderRadius: 14, padding: 13, background: "#15121f", border: "1px solid #2a2540" }}>
               <div style={{ fontWeight: 700, fontSize: 13 }}>Salon</div>

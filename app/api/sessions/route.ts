@@ -5,7 +5,7 @@ const HAS_SUPABASE =
   !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const FREE_SESSION_LIMIT = 3;
+const FREE_SESSION_LIMIT = 1;
 
 export async function POST(request: Request) {
   // Sandbox: return a predictable demo session immediately
@@ -23,19 +23,46 @@ export async function POST(request: Request) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Enforce free tier limit before touching formData
     const service = createServiceClient();
-    const { count: sessionsUsed } = await service
-      .from("sessions")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .in("status", ["complete", "generating", "analyzing"]);
 
-    if ((sessionsUsed ?? 0) >= FREE_SESSION_LIMIT) {
-      return Response.json(
-        { error: "free_limit_reached", sessionsUsed: sessionsUsed ?? 0 },
-        { status: 402 }
-      );
+    // Check subscription plan
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: sub } = await (service as any)
+      .from("subscriptions")
+      .select("plan, sessions_per_month, active_until")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const isPaid = !!(sub?.active_until && new Date(sub.active_until) > new Date());
+
+    if (isPaid) {
+      // Paid users: check sessions used this calendar month
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      const { count: sessionsThisMonth } = await service
+        .from("sessions")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", monthStart.toISOString())
+        .in("status", ["complete", "generating", "analyzing"]);
+      const limit = sub.sessions_per_month ?? 3;
+      if ((sessionsThisMonth ?? 0) >= limit) {
+        return Response.json({ error: "monthly_limit_reached", limit }, { status: 402 });
+      }
+    } else {
+      // Free users: check lifetime count
+      const { count: sessionsUsed } = await service
+        .from("sessions")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .in("status", ["complete", "generating", "analyzing"]);
+      if ((sessionsUsed ?? 0) >= FREE_SESSION_LIMIT) {
+        return Response.json(
+          { error: "free_limit_reached", sessionsUsed: sessionsUsed ?? 0 },
+          { status: 402 }
+        );
+      }
     }
 
     const formData = await request.formData();

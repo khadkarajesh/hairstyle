@@ -1,3 +1,15 @@
+export type Plan = "free" | "standard";
+
+export interface Subscription {
+  id: string;
+  user_id: string;
+  plan: Plan;
+  sessions_per_month: number;
+  active_until: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type SessionStatus =
   | "uploading"
   | "analyzing"
@@ -90,6 +102,36 @@ export interface Database {
           image_url_right?: string | null;
           saved?: boolean;
           created_at?: string;
+        };
+        Relationships: [];
+      };
+      subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          plan: string;
+          sessions_per_month: number;
+          active_until: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          plan?: string;
+          sessions_per_month?: number;
+          active_until?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          plan?: string;
+          sessions_per_month?: number;
+          active_until?: string | null;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };
