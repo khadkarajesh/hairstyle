@@ -145,7 +145,7 @@ body {
 .l-section { padding: 50px 48px; border-top: 1px solid #1c172b; }
 .l-steps-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 36px; }
 .l-showcase-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; }
-.l-pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; align-items: stretch; margin-top: 36px; }
+.l-pricing-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 18px; align-items: stretch; margin-top: 36px; }
 .l-deal { margin: 0 48px 50px; border-radius: 20px; border: 1px dashed #fb7185; background: radial-gradient(120% 140% at 100% 0%, rgba(251,113,133,.16), transparent 60%), #15121f; padding: 34px 40px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .l-showcase-section { padding: 10px 48px 50px; }
 .l-footer { border-top: 1px solid #1c172b; padding: 28px 48px; display: flex; align-items: center; justify-content: space-between; color: #6b6485; font-size: 13px; }
