@@ -77,6 +77,7 @@ export default function ResultsPage() {
   const [showBarberPrompt, setShowBarberPrompt] = useState(false);
   const [reminderDate, setReminderDate]       = useState<Date | null>(null);
   const [reminderJustSet, setReminderJustSet] = useState(false);
+  const [billingError, setBillingError]       = useState(false);
 
   useEffect(() => {
     if (SANDBOX || !HAS_SUPABASE || params.id === "demo") return;
@@ -136,35 +137,35 @@ export default function ResultsPage() {
       // Advertise in-flight set so the detail page can poll instead of duplicating
       inflightAdd(params.id, missing);
 
-      const generateOne = async (sid: string) => {
-        setGenerating(g => ({ ...g, [sid]: true }));
-        try {
-          const res = await fetch(`/api/sessions/${params.id}/styles/${sid}/generate-angle`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ angle: "front" }),
-          });
-          const text = await res.text();
-          const result = text ? JSON.parse(text) : {};
-          if (res.ok && result.url) {
-            setImageUrls(u => ({ ...u, [sid]: result.url }));
-          }
-        } catch { /* silent — card stays empty, user can retry from detail view */ }
-        finally {
-          inflightRemove(params.id, sid);
-          setGenerating(g => ({ ...g, [sid]: false }));
-          setGeneratedCount(c => c + 1);
-        }
-      };
-
       // Batch of 4 per 60-second window to stay under the 5 images/min rate limit.
       // After each batch completes we wait out the remainder of the 62s window before firing the next.
       const BATCH = 4;
       const WINDOW = 62_000;
+      let hitBilling = false;
       for (let i = 0; i < missing.length; i += BATCH) {
+        if (hitBilling) break;
         const batchStart = Date.now();
-        await Promise.allSettled(missing.slice(i, i + BATCH).map(generateOne));
-        if (i + BATCH < missing.length) {
+        await Promise.allSettled(missing.slice(i, i + BATCH).map(async sid => {
+          if (hitBilling) return;
+          setGenerating(g => ({ ...g, [sid]: true }));
+          try {
+            const res = await fetch(`/api/sessions/${params.id}/styles/${sid}/generate-angle`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ angle: "front" }),
+            });
+            if (res.status === 402) { hitBilling = true; setBillingError(true); return; }
+            const text = await res.text();
+            const result = text ? JSON.parse(text) : {};
+            if (res.ok && result.url) setImageUrls(u => ({ ...u, [sid]: result.url }));
+          } catch { /* silent — card stays empty */ }
+          finally {
+            inflightRemove(params.id, sid);
+            setGenerating(g => ({ ...g, [sid]: false }));
+            setGeneratedCount(c => c + 1);
+          }
+        }));
+        if (i + BATCH < missing.length && !hitBilling) {
           const wait = Math.max(0, WINDOW - (Date.now() - batchStart));
           if (wait > 0) await new Promise(r => setTimeout(r, wait));
         }
@@ -275,8 +276,18 @@ export default function ResultsPage() {
             : <p style={{ fontSize: 11, color: "#6b6485", marginTop: 4, fontStyle: "italic" }}>Style inspiration — results vary by hair type and barber skill.</p>
           }
 
+          {/* Billing error banner */}
+          {billingError && (
+            <div style={{ marginTop: 12, borderRadius: 10, background: "#1a0e0e", border: "1px solid #7f1d1d", padding: "10px 12px" }}>
+              <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#f87171", letterSpacing: ".04em", marginBottom: 4 }}>GENERATION PAUSED</div>
+              <div style={{ fontSize: 12, color: "#fca5a5", lineHeight: 1.5 }}>
+                OpenAI billing limit reached — some looks couldn&apos;t be generated. Top up your OpenAI account to generate the remaining styles.
+              </div>
+            </div>
+          )}
+
           {/* Generation progress banner */}
-          {totalToGenerate > 0 && generatedCount < totalToGenerate && (
+          {!billingError && totalToGenerate > 0 && generatedCount < totalToGenerate && (
             <div style={{ marginTop: 12, borderRadius: 10, background: "#15121f", border: "1px solid #2a2540", padding: "10px 12px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                 <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#a78bfa", letterSpacing: ".04em" }}>

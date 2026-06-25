@@ -79,10 +79,15 @@ export async function POST(
       break;
     } catch (err: unknown) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((err as any)?.status === 429 && attempt < 3) {
-        // Rate limited — wait 20 s and retry (up to 3 retries)
+      const status = (err as any)?.status;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const code   = (err as any)?.code;
+      if (status === 429 && attempt < 3) {
         await new Promise(r => setTimeout(r, 20_000));
         continue;
+      }
+      if (code === "billing_hard_limit_reached" || status === 400) {
+        return NextResponse.json({ error: "billing_limit" }, { status: 402 });
       }
       throw err;
     }

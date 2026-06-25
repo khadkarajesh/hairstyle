@@ -145,7 +145,7 @@ export default function ComparePage() {
       const angles: Angle[] = ["front", "left", "right"];
       const signed = await Promise.all(
         angles.map(a =>
-          supabase.storage.from("uploads").createSignedUrl(`${user.id}/${id}/${a}.jpg`, 3600)
+          supabase.storage.from("uploads").createSignedUrl(`${user.id}/${id}/${a}.jpg`, 60 * 60 * 24 * 365)
         )
       );
       setBeforeUrls({
