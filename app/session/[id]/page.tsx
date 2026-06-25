@@ -89,7 +89,7 @@ export default function ResultsPage() {
         .from("sessions")
         .select("face_shape, selected_styles, hair_attributes, created_at")
         .eq("id", params.id)
-        .single();
+        .maybeSingle();
 
       if (sessionRow?.face_shape)      setFaceShape(sessionRow.face_shape);
       if (sessionRow?.selected_styles) setSelected(sessionRow.selected_styles);
@@ -301,34 +301,41 @@ export default function ResultsPage() {
         {/* Style grid */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: "4px 16px 16px" }}>
           {displayStyles.map((s) => {
-            const imgUrl     = imageUrls[s.id] ?? null;
-            const isGen      = generatingStyles[s.id] ?? false;
-            const suits      = faceShape ? (STYLE_FACE_FIT[s.id] ?? []).includes(faceShape) : false;
-            return (
-              <Link
-                key={s.id}
-                href={`/session/${params.id}/style/${s.id}`}
-                style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "3/4", background: stripeBg(s.hue), boxShadow: suits ? "0 0 0 2px #7c3aed" : "inset 0 0 0 1px rgba(255,255,255,.06)", display: "block", textDecoration: "none" }}
-              >
+            const imgUrl = imageUrls[s.id] ?? null;
+            const isGen  = generatingStyles[s.id] ?? false;
+            const suits  = faceShape ? (STYLE_FACE_FIT[s.id] ?? []).includes(faceShape) : false;
+            const ready  = !!imgUrl;
+
+            const cardStyle: React.CSSProperties = {
+              position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "3/4",
+              background: stripeBg(s.hue),
+              boxShadow: suits ? "0 0 0 2px #7c3aed" : "inset 0 0 0 1px rgba(255,255,255,.06)",
+              display: "block", textDecoration: "none",
+              opacity: ready ? 1 : 0.6,
+              cursor: ready ? "pointer" : "default",
+            };
+
+            const inner = (
+              <>
                 {imgUrl && (
                   <Image
-                    src={imgUrl}
-                    alt={s.name}
-                    fill
+                    src={imgUrl} alt={s.name} fill
                     sizes="(max-width: 600px) 45vw, 185px"
                     style={{ objectFit: "cover" }}
                     onError={ev => { (ev.target as HTMLImageElement).style.display = "none"; }}
                   />
                 )}
-                {suits && (
+                {suits && ready && (
                   <div style={{ position: "absolute", top: 8, left: 8, fontFamily: "var(--font-space-mono)", fontSize: 8, letterSpacing: ".04em", background: "#7c3aed", color: "#fff", padding: "3px 7px", borderRadius: 7, zIndex: 2 }}>
                     ✓ SUITS YOU
                   </div>
                 )}
-                <button
-                  onClick={e => toggleSave(e, s.id)}
-                  style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: "50%", background: "rgba(8,5,18,.5)", border: "none", color: savedStyles[s.id] ? "#fb7185" : "#cdbfff", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}
-                >{savedStyles[s.id] ? "♥" : "♡"}</button>
+                {ready && (
+                  <button
+                    onClick={e => toggleSave(e, s.id)}
+                    style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: "50%", background: "rgba(8,5,18,.5)", border: "none", color: savedStyles[s.id] ? "#fb7185" : "#cdbfff", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}
+                  >{savedStyles[s.id] ? "♥" : "♡"}</button>
+                )}
 
                 {/* Generating spinner overlay */}
                 {!imgUrl && isGen && (
@@ -339,18 +346,31 @@ export default function ResultsPage() {
                   </div>
                 )}
 
-                {/* Placeholder circle when not yet generated and not generating */}
+                {/* Queued state — not yet started */}
                 {!imgUrl && !isGen && (
-                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <div style={{ width: 46, height: 46, borderRadius: "50%", border: "1.5px solid rgba(255,255,255,.22)" }} />
+                  <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <div style={{ width: 46, height: 46, borderRadius: "50%", border: "1.5px solid rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,.2)" }} />
+                    </div>
+                    <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 8, color: "#4a4568", letterSpacing: ".05em" }}>QUEUED</div>
                   </div>
                 )}
 
                 <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "28px 11px 11px", background: "linear-gradient(transparent,rgba(6,4,14,.94))", zIndex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, letterSpacing: "-.01em", color: "#f4f2fb" }}>{s.name}</div>
-                  <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 9, color: "#ab9fd0", letterSpacing: ".03em", marginTop: 2 }}>{s.tag}</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, letterSpacing: "-.01em", color: ready ? "#f4f2fb" : "#6b6485" }}>{s.name}</div>
+                  <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 9, color: ready ? "#ab9fd0" : "#3a3358", letterSpacing: ".03em", marginTop: 2 }}>{s.tag}</div>
                 </div>
+              </>
+            );
+
+            return ready ? (
+              <Link key={s.id} href={`/session/${params.id}/style/${s.id}`} style={cardStyle}>
+                {inner}
               </Link>
+            ) : (
+              <div key={s.id} style={cardStyle}>
+                {inner}
+              </div>
             );
           })}
         </div>

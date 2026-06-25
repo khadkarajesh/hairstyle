@@ -110,7 +110,7 @@ export default function ComparePage() {
         .from("sessions")
         .select("selected_styles")
         .eq("id", id)
-        .single();
+        .maybeSingle();
       if (sessionRow?.selected_styles?.length) {
         setSessionStyleIds(sessionRow.selected_styles);
       }
@@ -121,7 +121,7 @@ export default function ComparePage() {
         .select("*")
         .eq("session_id", id)
         .eq("style_id", styleId)
-        .single();
+        .maybeSingle();
 
       const afterFront = styleRow?.image_url       ?? null;
       const afterLeft  = styleRow?.image_url_left  ?? null;
@@ -181,7 +181,7 @@ export default function ComparePage() {
           .select("image_url")
           .eq("session_id", id)
           .eq("style_id", styleId)
-          .single();
+          .maybeSingle();
 
         if (data?.image_url) {
           setAfterUrls(u => ({ ...u, front: data.image_url }));
@@ -190,8 +190,8 @@ export default function ComparePage() {
           return;
         }
 
-        // After 3 polls (9 s), if nothing is in-flight, generate here
-        if (polls >= 3 && !isInflight(id, styleId) && !generated) {
+        // After 1 poll (3 s), if nothing is in-flight, generate here
+        if (polls >= 1 && !isInflight(id, styleId) && !generated) {
           generated = true;
           fetch(`/api/sessions/${id}/styles/${styleId}/generate-angle`, {
             method: "POST",
