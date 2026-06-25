@@ -39,6 +39,16 @@ function formatDate(d: Date) {
 }
 
 // sessionStorage helpers so detail page can poll instead of duplicating generation
+function imageUrlCacheKey(sessionId: string) { return `hs_img_${sessionId}`; }
+function readImageUrlCache(sessionId: string): Record<string, string | null> {
+  try { return JSON.parse(sessionStorage.getItem(imageUrlCacheKey(sessionId)) ?? "{}"); }
+  catch { return {}; }
+}
+function writeImageUrlCache(sessionId: string, map: Record<string, string | null>) {
+  try { sessionStorage.setItem(imageUrlCacheKey(sessionId), JSON.stringify(map)); }
+  catch {}
+}
+
 function inflightKey(sessionId: string) { return `hs_inflight_${sessionId}`; }
 function inflightAdd(sessionId: string, sids: string[]) {
   try {
@@ -82,6 +92,10 @@ export default function ResultsPage() {
 
   useEffect(() => {
     if (SANDBOX || !HAS_SUPABASE || params.id === "demo") return;
+
+    // Seed from cache immediately so images render on back-navigation
+    const cached = readImageUrlCache(params.id);
+    if (Object.keys(cached).length > 0) setImageUrls(cached);
 
     const fetchStyles = async () => {
       const supabase = createClient();
@@ -128,6 +142,7 @@ export default function ResultsPage() {
         barberMap[row.style_id] = !!row.shown_to_barber;
       });
       setImageUrls(map);
+      writeImageUrlCache(params.id, map);
       setSavedStyles(savedMap);
       setBarberStyles(barberMap);
 
@@ -172,7 +187,13 @@ export default function ResultsPage() {
             if (res.status === 402) { hitBilling = true; setBillingError(true); return; }
             const text = await res.text();
             const result = text ? JSON.parse(text) : {};
-            if (res.ok && result.url) setImageUrls(u => ({ ...u, [sid]: result.url }));
+            if (res.ok && result.url) {
+              setImageUrls(u => {
+                const next = { ...u, [sid]: result.url };
+                writeImageUrlCache(params.id, next);
+                return next;
+              });
+            }
           } catch { /* silent — card stays empty */ }
           finally {
             inflightRemove(params.id, sid);
