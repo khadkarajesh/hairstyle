@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 
 const NAV = [
   { href: "/session/latest", label: "Home",    icon: "square"   },
-  { href: "/profile#history",label: "History", icon: "circle-o" },
+  { href: "/history",        label: "History", icon: "circle-o" },
   { href: "/profile",        label: "Profile", icon: "circle"   },
 ];
 
@@ -27,10 +27,10 @@ export default function BottomNav() {
     }}>
       {NAV.map(item => {
         const active = item.label === "Profile"
-          ? path.startsWith("/profile")
-          : item.label === "Home"
-          ? path.startsWith("/session")
-          : false;
+          ? path === "/profile"
+          : item.label === "History"
+          ? path === "/history"
+          : path.startsWith("/session");
         return (
           <Link key={item.href} href={item.href} style={{
             display:"flex", flexDirection:"column", alignItems:"center", gap:4,

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { STYLES, stripeBg } from "@/lib/styles-data";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 
 const HAS_SUPABASE = !!(
@@ -36,6 +36,7 @@ export default async function LandingPage() {
           <div className="l-nav-links-text">
             <a href="#how" style={{ color: "#cdc6e3", textDecoration: "none" }}>How it works</a>
             <a href="#pricing" style={{ color: "#cdc6e3", textDecoration: "none" }}>Pricing</a>
+            <a href="#faq" style={{ color: "#cdc6e3", textDecoration: "none" }}>FAQ</a>
             {isLoggedIn
               ? <Link href="/session/latest" className="l-nav-login" style={{ color: "#a78bfa", textDecoration: "none", fontWeight: 600 }}>My looks</Link>
               : <Link href="/login" className="l-nav-login" style={{ color: "#9b94b8", textDecoration: "none" }}>Log in</Link>
@@ -51,10 +52,7 @@ export default async function LandingPage() {
       {/* Hero */}
       <section className="l-hero">
         <div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "var(--font-space-mono)", fontSize: 12, color: "#a78bfa", background: "#1c172b", border: "1px solid #2a2540", padding: "7px 13px", borderRadius: 99, letterSpacing: ".04em" }}>
-            🇳🇵 MADE IN KATHMANDU · EARLY ACCESS
-          </div>
-          <h1 style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: "clamp(32px, 8.5vw, 62px)", letterSpacing: "-.03em", lineHeight: .98, margin: "22px 0 0", maxWidth: "100%" }}>
+          <h1 style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: "clamp(32px, 8.5vw, 62px)", letterSpacing: "-.03em", lineHeight: .98, margin: "0", maxWidth: "100%" }}>
             See your next haircut<br />before the scissors touch.
           </h1>
           <p style={{ fontSize: 18, color: "#9b94b8", margin: "22px 0 0", lineHeight: 1.55, maxWidth: "min(480px, 100%)" }}>
@@ -86,50 +84,18 @@ export default async function LandingPage() {
           </div>
         </div>
 
-        {/* Hero visual — phone mockup showing the before/after + style grid */}
+        {/* Hero visual — real app screenshot in phone frame */}
         <div className="l-hero-visual">
           {/* Phone frame */}
           <div style={{ position: "absolute", right: 20, top: 10, width: 220, height: 410, borderRadius: 32, background: "#0b0912", border: "2px solid #2a2540", boxShadow: "0 32px 80px -20px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.04)", overflow: "hidden", zIndex: 2 }}>
-            {/* Status bar */}
-            <div style={{ height: 32, background: "#0d0b19", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px" }}>
-              <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 8, color: "#4a4568" }}>9:41</span>
-              <div style={{ width: 60, height: 14, borderRadius: 7, background: "#1a1730" }} />
-              <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 8, color: "#4a4568" }}>●●●</span>
-            </div>
-            {/* Before/after comparison area */}
-            <div style={{ position: "relative", height: 240, overflow: "hidden" }}>
-              {/* Before half */}
-              <div style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(135deg,#23222a,#23222a 8px,#28272f 8px,#28272f 16px)" }}>
-                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 80, height: 80, borderRadius: "50%", border: "1.5px dashed rgba(255,255,255,.15)" }} />
-              </div>
-              {/* After half (clipped) */}
-              <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "55%", overflow: "hidden" }}>
-                <div style={{ width: 220, height: 240, background: "repeating-linear-gradient(135deg,oklch(0.3 0.09 292),oklch(0.3 0.09 292) 8px,oklch(0.36 0.11 292) 8px,oklch(0.36 0.11 292) 16px)", position: "absolute", top: 0, left: 0 }}>
-                  <div style={{ position: "absolute", top: "50%", left: "60%", transform: "translate(-50%,-50%)", width: 80, height: 80, borderRadius: "50%", border: "1.5px dashed rgba(167,139,250,.4)" }}>
-                    {/* Hair shape hint */}
-                    <div style={{ position: "absolute", top: -18, left: "50%", transform: "translateX(-50%)", width: 62, height: 22, borderRadius: "50% 50% 0 0", background: "rgba(167,139,250,.35)", borderTop: "1.5px solid rgba(167,139,250,.5)" }} />
-                  </div>
-                </div>
-              </div>
-              {/* Divider */}
-              <div style={{ position: "absolute", top: 0, bottom: 0, left: "55%", width: 2, background: "#fff", boxShadow: "0 0 8px rgba(255,255,255,.4)", zIndex: 3 }}>
-                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 28, height: 28, borderRadius: "50%", background: "#fff", color: "#7c3aed", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, boxShadow: "0 2px 8px rgba(0,0,0,.3)" }}>⟺</div>
-              </div>
-              {/* Labels */}
-              <div style={{ position: "absolute", left: 8, bottom: 8, fontFamily: "var(--font-space-mono)", fontSize: 8, background: "rgba(0,0,0,.6)", padding: "3px 6px", borderRadius: 5, color: "#9b94b8", zIndex: 2 }}>BEFORE</div>
-              <div style={{ position: "absolute", right: 72, bottom: 8, fontFamily: "var(--font-space-mono)", fontSize: 8, background: "rgba(124,58,237,.7)", padding: "3px 6px", borderRadius: 5, color: "#fff", zIndex: 2 }}>AFTER</div>
-            </div>
-            {/* Style name */}
-            <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid #1e1a2e" }}>
-              <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 700, fontSize: 14 }}>Textured Crop</div>
-              <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 9, color: "#a78bfa", marginTop: 2 }}>K-STYLE · OVAL FACE</div>
-            </div>
-            {/* Mini style grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 5, padding: "8px 10px" }}>
-              {STYLES.slice(0, 8).map((s, i) => (
-                <div key={s.id} style={{ aspectRatio: "3/4", borderRadius: 7, background: stripeBg(s.hue), border: i === 0 ? "1.5px solid #a78bfa" : "none", opacity: i === 0 ? 1 : 0.6 }} />
-              ))}
-            </div>
+            <Image
+              src="/generated-image.png"
+              alt="AI-generated hairstyle preview — Textured Crop on a real face"
+              width={784}
+              height={1216}
+              style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+              priority
+            />
           </div>
 
           {/* Floating face-shape badge */}
@@ -177,26 +143,108 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* Style showcase */}
-      <section className="l-showcase-section">
-        <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 11, color: "#6b6485", letterSpacing: ".06em", marginBottom: 6, textAlign: "center" }}>{STYLES.length} STYLES AVAILABLE</div>
-        <p style={{ textAlign: "center", fontSize: 13, color: "#4a4568", marginBottom: 16 }}>Each one rendered on your actual face — not a simulation.</p>
-        <div className="l-showcase-grid">
-          {STYLES.map(s => (
-            <div key={s.id} style={{ position: "relative", borderRadius: 13, overflow: "hidden", aspectRatio: "3/4", background: stripeBg(s.hue), boxShadow: "inset 0 0 0 1px rgba(255,255,255,.06)" }}>
-              {/* Stylised silhouette */}
-              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0 }}>
-                <div style={{ width: 36, height: 10, borderRadius: "50% 50% 0 0", background: "rgba(255,255,255,.15)", marginBottom: 0 }} />
-                <div style={{ width: 30, height: 38, borderRadius: "50%", border: "1.5px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.04)" }} />
-              </div>
-              <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "22px 9px 8px", background: "linear-gradient(transparent,rgba(6,4,14,.94))" }}>
-                <div style={{ fontWeight: 700, fontSize: 11 }}>{s.name}</div>
-                <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 8, color: "#ab9fd0", marginTop: 1 }}>{s.tag}</div>
-              </div>
+      {/* Why it works — problem vs solution */}
+      <section className="l-section">
+        <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 12, color: "#a78bfa", letterSpacing: ".08em", textAlign: "center" }}>THE PROBLEM WE SOLVE</div>
+        <h2 style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 38, letterSpacing: "-.025em", textAlign: "center", margin: "10px 0 0" }}>Reference photos lie.<br />Your face doesn&apos;t.</h2>
+        <p style={{ textAlign: "center", fontSize: 15, color: "#9b94b8", margin: "14px auto 0", lineHeight: 1.55, maxWidth: 520 }}>
+          Every style photo you find online is on a different face, different hair texture, different lighting. You can&apos;t picture yourself in it — until now.
+        </p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginTop: 36, maxWidth: 820, margin: "36px auto 0" }}>
+          {/* Old way */}
+          <div style={{ background: "#15121f", border: "1px solid #2a2540", borderRadius: 18, padding: "28px 26px" }}>
+            <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#fb7185", letterSpacing: ".08em" }}>THE OLD WAY</div>
+            <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 700, fontSize: 20, marginTop: 10 }}>Guesswork at the chair</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 18, fontSize: 14, color: "#6b6485", lineHeight: 1.4 }}>
+              <div>✗ Screenshot a random Western celebrity</div>
+              <div>✗ Show barber a face that looks nothing like yours</div>
+              <div>✗ &ldquo;Make it look like that&rdquo; — it never does</div>
+              <div>✗ Walk out disappointed. Wait 6 weeks to try again.</div>
+            </div>
+          </div>
+          {/* New way */}
+          <div style={{ background: "linear-gradient(160deg,#1a1340,#15121f)", border: "1.5px solid #7c3aed", borderRadius: 18, padding: "28px 26px", boxShadow: "0 20px 50px -20px rgba(124,58,237,.45)" }}>
+            <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#34d399", letterSpacing: ".08em" }}>WITH HAIRSTYLE AI</div>
+            <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 700, fontSize: 20, marginTop: 10 }}>Certainty before scissors</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 18, fontSize: 14, color: "#cdc6e3", lineHeight: 1.4 }}>
+              <div>✓ AI renders the style <strong>on your actual face</strong></div>
+              <div>✓ Matched to <strong>your face shape</strong> and hair texture</div>
+              <div>✓ Show barber the screen — no printing, no confusion</div>
+              <div>✓ Get the cut you actually wanted. First time.</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 25 styles callout */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", marginTop: 36 }}>
+          {([
+            ["K-Pop", "Comma Hair · Curtain Fringe · Wolf Cut · Middle Part · Korean Perm"],
+            ["Barbershop", "Taper Fade · High Skin Fade · Crew Cut · Buzz Cut · Edgar Cut"],
+            ["Professional", "Side Part · Comb Over Fade · Hard Part · Undercut"],
+            ["Bollywood", "Pompadour · Slick Back · Quiff"],
+            ["Streetwear", "Textured Crop · French Crop · Faux Hawk · Spiky Textured"],
+            ["Natural", "Wavy Fringe · Bro Flow · Modern Mullet"],
+          ] as const).map(([cat, styles]) => (
+            <div key={cat} style={{ background: "#15121f", border: "1px solid #2a2540", borderRadius: 12, padding: "10px 16px", fontSize: 13 }}>
+              <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#a78bfa", letterSpacing: ".04em" }}>{cat}</span>
+              <div style={{ color: "#9b94b8", marginTop: 4, lineHeight: 1.5 }}>{styles}</div>
             </div>
           ))}
         </div>
-        <p style={{ textAlign: "center", fontSize: 12, color: "#4a4568", marginTop: 14 }}>Thumbnails show placeholders — your AI-generated previews replace these in-app.</p>
+        <div style={{ textAlign: "center", marginTop: 14, fontFamily: "var(--font-space-mono)", fontSize: 11, color: "#4a4568" }}>
+          25 STYLES TOTAL · ALL RENDERED ON YOUR FACE IN THE APP
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="l-section">
+        <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 12, color: "#a78bfa", letterSpacing: ".08em", textAlign: "center" }}>FAQ</div>
+        <h2 style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 38, letterSpacing: "-.025em", textAlign: "center", margin: "10px 0 0" }}>Common questions.</h2>
+        <div style={{ maxWidth: 680, margin: "36px auto 0", display: "flex", flexDirection: "column" }}>
+          {([
+            ["How realistic are the results?",
+             "Very. We use GPT-Image-2 — the same generation model behind the best AI tools in the world. The output is a photorealistic image of you with the new hairstyle, not a cartoon or overlay. Results vary slightly with photo quality, which is why the app guides you on how to take good shots."],
+            ["What photos do I need?",
+             "Three photos: front-facing, left profile, and right profile. The app shows you exactly how to frame each one. Plain backgrounds and natural daylight give the best results. The whole photo process takes under 2 minutes."],
+            ["How long does a session take?",
+             "About 60–90 seconds after you upload. Claude AI reads your face shape and selects matching styles, then GPT-Image-2 renders each one. You can tap any style to see left and right angle views too."],
+            ["How does the barber screen work?",
+             "Once you pick a style you like, tap 'Show barber' on the detail screen. It brings up a full-screen, bright, easy-to-read view of the result that you can hold up at the salon. No printing, no screenshots, no explaining — your barber sees exactly what you want."],
+            ["Does it work for thick South Asian hair?",
+             "Yes — that's exactly who this is built for. Most style apps and inspiration content is optimised for fine Western hair textures. Our prompts and style catalog are specifically tuned for thick, dark, South Asian hair. If a style doesn't suit your texture, we surface that via the face-shape filter."],
+            ["Will my photos be shared or used for advertising?",
+             "No. Your photos are stored privately in your account and are never shared or used for advertising. You can delete them at any time from your profile settings."],
+          ] as const).map(([q, a]) => (
+            <details key={q} style={{ borderBottom: "1px solid #1e1a2e", padding: "18px 0" }}>
+              <summary style={{ cursor: "pointer", fontWeight: 700, fontSize: 16, color: "#f4f2fb", listStyle: "none", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                {q}
+                <span style={{ color: "#6b6485", fontSize: 20, flexShrink: 0, lineHeight: 1 }}>+</span>
+              </summary>
+              <p style={{ fontSize: 14, color: "#9b94b8", marginTop: 12, lineHeight: 1.65, marginBottom: 0 }}>{a}</p>
+            </details>
+          ))}
+
+          {/* Payment FAQ — needs an inline link */}
+          <details style={{ borderBottom: "1px solid #1e1a2e", padding: "18px 0" }}>
+            <summary style={{ cursor: "pointer", fontWeight: 700, fontSize: 16, color: "#f4f2fb", listStyle: "none", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              How do I pay? I don&apos;t have a card.
+              <span style={{ color: "#6b6485", fontSize: 20, flexShrink: 0, lineHeight: 1 }}>+</span>
+            </summary>
+            <p style={{ fontSize: 14, color: "#9b94b8", marginTop: 12, lineHeight: 1.65, marginBottom: 0 }}>
+              No card needed. Your first session is completely free. For additional sessions, we accept <strong style={{ color: "#cdc6e3" }}>FonePay, eSewa, and cash</strong>.{" "}
+              <a
+                href="https://wa.me/9779849696795?text=Hi%2C%20I%27d%20like%20to%20buy%20a%20HairStyle%20AI%20session%20credit"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#a78bfa", textDecoration: "underline" }}
+              >
+                Message us on WhatsApp
+              </a>{" "}
+              and we&apos;ll activate your credits within an hour.
+            </p>
+          </details>
+        </div>
       </section>
 
       {/* Pricing */}

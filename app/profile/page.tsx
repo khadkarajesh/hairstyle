@@ -6,27 +6,21 @@ import BottomNav from "@/components/BottomNav";
 import AppShell from "@/components/AppShell";
 import LogoutButton from "@/components/LogoutButton";
 import { createClient } from "@/lib/supabase/client";
-import { stripeBg } from "@/lib/styles-data";
 
 const SANDBOX = process.env.NEXT_PUBLIC_SANDBOX === "true";
 const HAS_SUPABASE = !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 const SESSION_LIMIT = 1; // free tier
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "2-digit" }).toUpperCase();
-}
-
-interface SessionRow { id: string; created_at: string; selected_styles: string[] | null; }
 interface SavedLook { session_id: string; style_id: string; image_url: string | null; }
 
 export default function ProfilePage() {
   const [name, setName]               = useState("Your Profile");
   const [email, setEmail]             = useState("");
   const [initial, setInitial]         = useState("?");
-  const [sessions, setSessions]       = useState<SessionRow[]>([]);
   const [savedLooks, setSaved]        = useState<SavedLook[]>([]);
   const [creditsRemaining, setCredits] = useState<number | null>(null);
+  const [sessionsUsed, setSessionsUsed] = useState(0);
   const [loading, setLoading]         = useState(true);
 
   useEffect(() => {
@@ -43,13 +37,11 @@ export default function ProfilePage() {
       setInitial((displayName[0] ?? "?").toUpperCase());
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: sessionRows } = await (supabase as any)
+      const { count } = await (supabase as any)
         .from("sessions")
-        .select("id, created_at, selected_styles")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      if (sessionRows) setSessions(sessionRows);
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      if (count != null) setSessionsUsed(count);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: saved } = await (supabase as any)
@@ -73,7 +65,6 @@ export default function ProfilePage() {
     load();
   }, []);
 
-  const sessionsUsed = sessions.length;
   const usagePct = Math.min(100, Math.round((sessionsUsed / SESSION_LIMIT) * 100));
 
   return (
@@ -128,37 +119,6 @@ export default function ProfilePage() {
               </Link>
             </>
           )}
-        </div>
-
-        {/* Sessions list */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 20 }}>
-          <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 700, fontSize: 16 }}>Your sessions</div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
-          {loading && (
-            <div style={{ height: 56, borderRadius: 13, background: "#15121f", border: "1px solid #2a2540", animation: "pulse 1.5s ease-in-out infinite" }} />
-          )}
-          {!loading && sessions.length === 0 && (
-            <div style={{ fontSize: 13, color: "#6b6485", padding: "12px 0" }}>No sessions yet. <Link href="/upload" style={{ color: "#a78bfa", textDecoration: "none" }}>Start one →</Link></div>
-          )}
-          {sessions.map((s, idx) => (
-            <Link key={s.id} href={`/session/${s.id}`} style={{ display: "flex", alignItems: "center", gap: 12, background: "#15121f", border: "1px solid #2a2540", borderRadius: 13, padding: 9, textDecoration: "none", color: "#f4f2fb" }}>
-              <div style={{ display: "flex", gap: 3 }}>
-                {[0, 1].map(i => {
-                  const styleId = s.selected_styles?.[i];
-                  const hue = styleId ? ((styleId.charCodeAt(0) * 7 + styleId.charCodeAt(1) * 13) % 80 + 260) : 290 + idx * 20;
-                  return <div key={i} style={{ width: 30, height: 38, borderRadius: 6, background: stripeBg(hue) }} />;
-                })}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>Session {idx + 1}</div>
-                <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#9b94b8", marginTop: 2 }}>
-                  {formatDate(s.created_at)} · {s.selected_styles?.length ?? 0} LOOKS
-                </div>
-              </div>
-              <span style={{ color: "#6b6485", fontSize: 16 }}>›</span>
-            </Link>
-          ))}
         </div>
 
         {/* Saved looks */}

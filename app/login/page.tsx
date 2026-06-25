@@ -151,11 +151,11 @@ function LoginContent() {
                 disabled={loading || !email.trim()}
                 style={{ height: 50, borderRadius: 13, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, color: "#fff", border: "none", cursor: (loading || !email.trim()) ? "not-allowed" : "pointer", boxShadow: "0 12px 26px -10px rgba(124,58,237,.8)", width: "100%", opacity: (loading || !email.trim()) ? 0.7 : 1 }}
               >
-                {loading ? "Sending link…" : "Create free account"}
+                {loading ? "Sending link…" : "Continue with email"}
               </button>
 
               <div style={{ textAlign: "center", fontSize: 12, color: "#6b6485", marginTop: 6 }}>
-                Already in? <button onClick={handleEmailAuth} style={{ color: "#a78bfa", fontWeight: 600, background: "none", border: "none", cursor: "pointer", fontSize: 12, padding: 0 }}>Log in</button>
+                New or returning — we&apos;ll handle it automatically.
               </div>
             </div>
           </>
