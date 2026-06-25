@@ -6,9 +6,9 @@ import { Suspense } from "react";
 import AppShell from "@/components/AppShell";
 
 const PACKS = [
-  { id: "value",   name: "Value Pack", sessions: 3, price: 499, perSession: 166, popular: true  },
-  { id: "starter", name: "Starter",    sessions: 1, price: 199, perSession: 199, popular: false },
-  { id: "pro",     name: "Pro Pack",   sessions: 5, price: 749, perSession: 150, popular: false },
+  { id: "value",   name: "Value Pack", sessions: 3, price: 499, perSession: 166, popular: true,  tagline: "~3 haircuts covered"    },
+  { id: "starter", name: "Starter",    sessions: 1, price: 199, perSession: 199, popular: false, tagline: "Try it once"             },
+  { id: "pro",     name: "Pro Pack",   sessions: 5, price: 749, perSession: 150, popular: false, tagline: "A full year of guidance" },
 ] as const;
 
 type PackId = (typeof PACKS)[number]["id"];
@@ -37,15 +37,15 @@ function UpgradeContent() {
 
         {/* Eyebrow + headline */}
         <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 11, color: "#a78bfa", letterSpacing: ".06em", marginTop: 6 }}>
-          {hitLimit ? "FREE SESSION USED" : "GET MORE SESSIONS"}
+          {hitLimit ? "FREE SESSION USED" : "YOUR STYLE GUIDE"}
         </div>
         <h1 style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 28, letterSpacing: "-.025em", lineHeight: 1.05, marginTop: 10 }}>
           {hitLimit
-            ? <>Your free session<br />is used up.</>
-            : <>Buy sessions,<br />use when ready.</>}
+            ? <>Hair grows.<br />So does your style.</>
+            : <>A style guide that<br />learns who you are.</>}
         </h1>
-        <p style={{ fontSize: 13, color: "#9b94b8", marginTop: 10, lineHeight: 1.5 }}>
-          Credits never expire. Each session = 10 hairstyle previews personalised to what you liked last time.
+        <p style={{ fontSize: 13, color: "#9b94b8", marginTop: 10, lineHeight: 1.6 }}>
+          Each session reads your current hair and builds on what you liked before — sharper recommendations every time. Credits never expire, use them at your next haircut.
         </p>
 
         {/* Pack selector */}
@@ -70,13 +70,16 @@ function UpgradeContent() {
                     BEST VALUE
                   </div>
                 )}
-                <div style={{ fontWeight: 700, fontSize: 15, color: isSelected ? "#fff" : "#f4f2fb" }}>{p.name}</div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: isSelected ? "#fff" : "#f4f2fb" }}>{p.name}</div>
+                  <div style={{ fontSize: 11, color: isSelected ? "#d4c9ff" : "#6b6485", fontStyle: "italic" }}>{p.tagline}</div>
+                </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 4 }}>
                   <span style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 28, color: isSelected ? "#fff" : "#f4f2fb" }}>NPR {p.price}</span>
                   <span style={{ fontSize: 12, color: isSelected ? "#e6dcff" : "#9b94b8" }}>· {p.sessions} session{p.sessions > 1 ? "s" : ""}</span>
                 </div>
                 <div style={{ fontSize: 11, color: isSelected ? "#ece4ff" : "#6b6485", marginTop: 4 }}>
-                  NPR {p.perSession}/session · never expires
+                  NPR {p.perSession}/session · credits never expire
                 </div>
               </button>
             );
@@ -95,9 +98,9 @@ function UpgradeContent() {
           <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 9, color: "#a78bfa", letterSpacing: ".05em", marginBottom: 8 }}>EVERY PAID SESSION INCLUDES</div>
           {[
             "10 hairstyle previews on your actual face",
-            "Left & right angle views",
-            "Download your looks",
-            "Personalised based on what you saved last time",
+            "Front, left & right angle views",
+            "Gets smarter each session — learns your taste",
+            "Download & share your looks",
           ].map(item => (
             <div key={item} style={{ fontSize: 12, color: "#9b94b8", display: "flex", gap: 8, marginBottom: 5 }}>
               <span style={{ color: "#a78bfa", flexShrink: 0 }}>✓</span>{item}
@@ -117,7 +120,7 @@ function UpgradeContent() {
             Pay via WhatsApp — NPR {pack.price}
           </a>
           <div style={{ textAlign: "center", fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#6b6485" }}>
-            MESSAGE US · WE ACTIVATE YOUR PLAN WITHIN 1 HOUR
+            MESSAGE US · ACTIVATED WITHIN 1 HOUR
           </div>
         </div>
 
