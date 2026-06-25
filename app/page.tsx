@@ -76,7 +76,7 @@ export default async function LandingPage() {
             )}
           </div>
           <div className="l-hero-trust">
-            NO CARD NEEDED · 3 FREE SESSIONS · PHOTOS DELETED IN 24H
+            NO CARD NEEDED · 1 FREE SESSION · PHOTOS STORED SECURELY
           </div>
         </div>
 

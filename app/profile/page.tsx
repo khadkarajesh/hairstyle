@@ -21,12 +21,13 @@ interface SessionRow { id: string; created_at: string; selected_styles: string[]
 interface SavedLook { session_id: string; style_id: string; image_url: string | null; }
 
 export default function ProfilePage() {
-  const [name, setName]           = useState("Your Profile");
-  const [email, setEmail]         = useState("");
-  const [initial, setInitial]     = useState("?");
-  const [sessions, setSessions]   = useState<SessionRow[]>([]);
-  const [savedLooks, setSaved]    = useState<SavedLook[]>([]);
-  const [loading, setLoading]     = useState(true);
+  const [name, setName]               = useState("Your Profile");
+  const [email, setEmail]             = useState("");
+  const [initial, setInitial]         = useState("?");
+  const [sessions, setSessions]       = useState<SessionRow[]>([]);
+  const [savedLooks, setSaved]        = useState<SavedLook[]>([]);
+  const [creditsRemaining, setCredits] = useState<number | null>(null);
+  const [loading, setLoading]         = useState(true);
 
   useEffect(() => {
     if (SANDBOX || !HAS_SUPABASE) { setLoading(false); return; }
@@ -58,6 +59,14 @@ export default function ProfilePage() {
         .limit(6);
       if (saved) setSaved(saved);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: cr } = await (supabase as any)
+        .from("credits")
+        .select("sessions_remaining")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cr !== null) setCredits(cr.sessions_remaining);
+
       setLoading(false);
     };
 
@@ -84,23 +93,41 @@ export default function ProfilePage() {
             <div style={{ fontSize: 12, color: "#9b94b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{email}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-            <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#cdbfff", background: "#221c33", border: "1px solid #3a3358", padding: "5px 9px", borderRadius: 8 }}>FREE</span>
+            <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: creditsRemaining !== null ? "#a78bfa" : "#cdbfff", background: "#221c33", border: "1px solid #3a3358", padding: "5px 9px", borderRadius: 8 }}>
+              {creditsRemaining !== null ? `${creditsRemaining} CREDIT${creditsRemaining !== 1 ? "S" : ""}` : "FREE"}
+            </span>
             <LogoutButton />
           </div>
         </div>
 
         {/* Usage card */}
         <div style={{ marginTop: 18, background: "#15121f", border: "1px solid #2a2540", borderRadius: 16, padding: 15 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <span style={{ fontSize: 13, color: "#9b94b8", fontWeight: 600 }}>Sessions used</span>
-            <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 12 }}>{sessionsUsed} / {SESSION_LIMIT} free session</span>
-          </div>
-          <div style={{ height: 6, borderRadius: 3, background: "#211d33", marginTop: 10, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${usagePct}%`, background: "linear-gradient(90deg,#a78bfa,#7c3aed)", borderRadius: 3, transition: "width .4s ease" }} />
-          </div>
-          <Link href="/upgrade" style={{ marginTop: 13, height: 42, borderRadius: 11, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: "#fff", textDecoration: "none" }}>
-            Upgrade to Standard — NPR 499/mo
-          </Link>
+          {creditsRemaining !== null ? (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <span style={{ fontSize: 13, color: "#9b94b8", fontWeight: 600 }}>Sessions remaining</span>
+                <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 12, color: creditsRemaining > 0 ? "#a78bfa" : "#f87171" }}>
+                  {creditsRemaining} credit{creditsRemaining !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <Link href="/upgrade" style={{ marginTop: 13, height: 42, borderRadius: 11, background: "#1e1a30", border: "1px solid #3a3358", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 13, color: "#a78bfa", textDecoration: "none" }}>
+                Buy more sessions →
+              </Link>
+            </>
+          ) : (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <span style={{ fontSize: 13, color: "#9b94b8", fontWeight: 600 }}>Sessions used</span>
+                <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 12 }}>{sessionsUsed} / {SESSION_LIMIT} free</span>
+              </div>
+              <div style={{ height: 6, borderRadius: 3, background: "#211d33", marginTop: 10, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${usagePct}%`, background: "linear-gradient(90deg,#a78bfa,#7c3aed)", borderRadius: 3, transition: "width .4s ease" }} />
+              </div>
+              <Link href="/upgrade" style={{ marginTop: 13, height: 42, borderRadius: 11, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: "#fff", textDecoration: "none" }}>
+                Buy sessions — from NPR 199
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Sessions list */}

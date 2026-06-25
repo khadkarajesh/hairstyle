@@ -64,13 +64,18 @@ const ATTR_LABELS: Record<string, string> = {
 
 export default function ResultsPage() {
   const params = useParams<{ id: string }>();
-  const [imageUrls, setImageUrls]           = useState<Record<string, string | null>>({});
-  const [faceShape, setFaceShape]           = useState<string | null>(null);
-  const [selectedStyles, setSelected]       = useState<string[] | null>(null);
-  const [hairAttributes, setHairAttrs]      = useState<Record<string, string> | null>(null);
-  const [generatingStyles, setGenerating]   = useState<Record<string, boolean>>({});
-  const [savedStyles, setSavedStyles]       = useState<Record<string, boolean>>({});
-  const [reminderDate, setReminderDate]     = useState<Date | null>(null);
+  const [imageUrls, setImageUrls]             = useState<Record<string, string | null>>({});
+  const [faceShape, setFaceShape]             = useState<string | null>(null);
+  const [selectedStyles, setSelected]         = useState<string[] | null>(null);
+  const [hairAttributes, setHairAttrs]        = useState<Record<string, string> | null>(null);
+  const [generatingStyles, setGenerating]     = useState<Record<string, boolean>>({});
+  const [savedStyles, setSavedStyles]         = useState<Record<string, boolean>>({});
+  const [barberStyles, setBarberStyles]       = useState<Record<string, boolean>>({});
+  const [totalToGenerate, setTotalToGenerate] = useState(0);
+  const [generatedCount, setGeneratedCount]   = useState(0);
+  const [sessionCreatedAt, setCreatedAt]      = useState<string | null>(null);
+  const [showBarberPrompt, setShowBarberPrompt] = useState(false);
+  const [reminderDate, setReminderDate]       = useState<Date | null>(null);
   const [reminderJustSet, setReminderJustSet] = useState(false);
 
   useEffect(() => {
@@ -82,34 +87,51 @@ export default function ResultsPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: sessionRow } = await (supabase as any)
         .from("sessions")
-        .select("face_shape, selected_styles, hair_attributes")
+        .select("face_shape, selected_styles, hair_attributes, created_at")
         .eq("id", params.id)
         .single();
 
       if (sessionRow?.face_shape)      setFaceShape(sessionRow.face_shape);
       if (sessionRow?.selected_styles) setSelected(sessionRow.selected_styles);
       if (sessionRow?.hair_attributes) setHairAttrs(sessionRow.hair_attributes);
+      if (sessionRow?.created_at)      setCreatedAt(sessionRow.created_at);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase as any)
         .from("session_styles")
-        .select("style_id, image_url, saved")
+        .select("style_id, image_url, saved, shown_to_barber")
         .eq("session_id", params.id);
 
       const map: Record<string, string | null> = {};
       const savedMap: Record<string, boolean> = {};
+      const barberMap: Record<string, boolean> = {};
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (data) (data as any[]).forEach((row) => {
         map[row.style_id] = row.image_url;
         savedMap[row.style_id] = !!row.saved;
+        barberMap[row.style_id] = !!row.shown_to_barber;
       });
       setImageUrls(map);
       setSavedStyles(savedMap);
+      setBarberStyles(barberMap);
+
+      // Show barber prompt if session is >24hrs old and nothing marked yet
+      if (sessionRow?.created_at) {
+        const elapsed = Date.now() - new Date(sessionRow.created_at).getTime();
+        const dismissed = localStorage.getItem(`hs_barber_dismissed_${params.id}`);
+        const hasMarks = Object.values(barberMap).some(Boolean);
+        if (elapsed > 24 * 3600 * 1000 && !dismissed && !hasMarks) {
+          setShowBarberPrompt(true);
+        }
+      }
 
       // Lazy-generate front view for all styles that haven't been generated yet
       const styleList: string[] = sessionRow?.selected_styles ?? Object.keys(map);
       const missing = styleList.filter(sid => !map[sid]);
       if (missing.length === 0) return;
+
+      setTotalToGenerate(missing.length);
+      setGeneratedCount(0);
 
       // Advertise in-flight set so the detail page can poll instead of duplicating
       inflightAdd(params.id, missing);
@@ -131,6 +153,7 @@ export default function ResultsPage() {
         finally {
           inflightRemove(params.id, sid);
           setGenerating(g => ({ ...g, [sid]: false }));
+          setGeneratedCount(c => c + 1);
         }
       };
 
@@ -175,6 +198,29 @@ export default function ResultsPage() {
     } catch {
       setSavedStyles(s => ({ ...s, [sid]: !next }));
     }
+  };
+
+  const toggleBarber = async (sid: string) => {
+    const next = !barberStyles[sid];
+    setBarberStyles(s => ({ ...s, [sid]: next }));
+    if (next) {
+      // Auto-dismiss prompt 1.5s after first mark — user has engaged
+      setTimeout(() => setShowBarberPrompt(false), 1500);
+    }
+    try {
+      await fetch(`/api/sessions/${params.id}/styles/${sid}/barber`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shown_to_barber: next }),
+      });
+    } catch {
+      setBarberStyles(s => ({ ...s, [sid]: !next }));
+    }
+  };
+
+  const dismissBarberPrompt = () => {
+    localStorage.setItem(`hs_barber_dismissed_${params.id}`, "1");
+    setShowBarberPrompt(false);
   };
 
   const displayStyleIds: string[] = selectedStyles ??
@@ -228,6 +274,28 @@ export default function ResultsPage() {
             ? <p style={{ fontSize: 11, color: "#6b6485", marginTop: 8, fontStyle: "italic", lineHeight: 1.5 }}>{reasoning}</p>
             : <p style={{ fontSize: 11, color: "#6b6485", marginTop: 4, fontStyle: "italic" }}>Style inspiration — results vary by hair type and barber skill.</p>
           }
+
+          {/* Generation progress banner */}
+          {totalToGenerate > 0 && generatedCount < totalToGenerate && (
+            <div style={{ marginTop: 12, borderRadius: 10, background: "#15121f", border: "1px solid #2a2540", padding: "10px 12px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#a78bfa", letterSpacing: ".04em" }}>
+                  GENERATING YOUR LOOKS
+                </span>
+                <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#6b6485" }}>
+                  {generatedCount} / {totalToGenerate} ready
+                </span>
+              </div>
+              <div style={{ height: 3, borderRadius: 2, background: "#2a2540", overflow: "hidden" }}>
+                <div style={{ height: "100%", borderRadius: 2, background: "linear-gradient(90deg,#7c3aed,#a78bfa)", width: `${(generatedCount / totalToGenerate) * 100}%`, transition: "width 0.4s ease" }} />
+              </div>
+              <p style={{ fontSize: 10, color: "#4a4568", marginTop: 5 }}>
+                {totalToGenerate - generatedCount > 4
+                  ? "First 4 will appear shortly — the rest follow in ~1 min"
+                  : "Almost there — finishing your remaining looks"}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Style grid */}
@@ -286,6 +354,44 @@ export default function ResultsPage() {
             );
           })}
         </div>
+
+        {/* Barber prompt — appears 24hrs after session, persists until dismissed or marked */}
+        {showBarberPrompt && (
+          <div style={{ margin: "0 16px 16px", borderRadius: 14, background: "#0d1a14", border: "1px solid #34d399", padding: "14px 16px" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+              <div>
+                <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 9, color: "#34d399", letterSpacing: ".06em" }}>✂ BARBER VISIT</span>
+                <div style={{ fontWeight: 700, fontSize: 14, marginTop: 3, color: "#f4f2fb" }}>Did you show any of these to your barber?</div>
+              </div>
+              <button onClick={dismissBarberPrompt} style={{ background: "none", border: "none", color: "#4a4568", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1, flexShrink: 0, marginLeft: 8 }}>✕</button>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+              {displayStyles.slice(0, 9).map(s => {
+                const marked = barberStyles[s.id];
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => toggleBarber(s.id)}
+                    style={{
+                      height: 30, borderRadius: 8, padding: "0 11px",
+                      background: marked ? "rgba(52,211,153,.15)" : "#1a2420",
+                      border: `1px solid ${marked ? "#34d399" : "#2a4038"}`,
+                      color: marked ? "#34d399" : "#9b94b8",
+                      fontWeight: 600, fontSize: 11, cursor: "pointer",
+                      display: "flex", alignItems: "center", gap: 5, transition: "all .15s",
+                    }}
+                  >
+                    {marked && <span style={{ fontSize: 9 }}>✓</span>}
+                    {s.name}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: 10, color: "#4a4568", marginTop: 8, lineHeight: 1.5 }}>
+              Tap to mark · helps personalise your next session
+            </div>
+          </div>
+        )}
 
         {/* Haircut reminder */}
         <div style={{ margin: "4px 16px 20px", borderRadius: 14, background: "#13101e", border: "1px solid #221e33", padding: "14px 16px" }}>

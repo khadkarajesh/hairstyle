@@ -1,5 +1,11 @@
 export type Plan = "free" | "standard";
 
+export interface Credits {
+  user_id: string;
+  sessions_remaining: number;
+  updated_at: string;
+}
+
 export interface Subscription {
   id: string;
   user_id: string;
@@ -35,6 +41,7 @@ export interface SessionStyle {
   image_url_left: string | null;
   image_url_right: string | null;
   saved: boolean;
+  shown_to_barber: boolean;
   created_at: string;
 }
 
@@ -81,6 +88,7 @@ export interface Database {
           image_url_left: string | null;
           image_url_right: string | null;
           saved: boolean;
+          shown_to_barber: boolean;
           created_at: string;
         };
         Insert: {
@@ -91,6 +99,7 @@ export interface Database {
           image_url_left?: string | null;
           image_url_right?: string | null;
           saved?: boolean;
+          shown_to_barber?: boolean;
           created_at?: string;
         };
         Update: {
@@ -101,8 +110,15 @@ export interface Database {
           image_url_left?: string | null;
           image_url_right?: string | null;
           saved?: boolean;
+          shown_to_barber?: boolean;
           created_at?: string;
         };
+        Relationships: [];
+      };
+      credits: {
+        Row:    { user_id: string; sessions_remaining: number; updated_at: string };
+        Insert: { user_id: string; sessions_remaining?: number; updated_at?: string };
+        Update: { user_id?: string; sessions_remaining?: number; updated_at?: string };
         Relationships: [];
       };
       subscriptions: {

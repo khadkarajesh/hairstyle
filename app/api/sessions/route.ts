@@ -25,41 +25,29 @@ export async function POST(request: Request) {
 
     const service = createServiceClient();
 
-    // Check subscription plan
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: sub } = await (service as any)
-      .from("subscriptions")
-      .select("plan, sessions_per_month, active_until")
+    // Count total sessions to determine free vs paid path
+    const { count: sessionCount } = await service
+      .from("sessions")
+      .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
-      .maybeSingle();
+      .in("status", ["complete", "generating", "analyzing"]);
 
-    const isPaid = !!(sub?.active_until && new Date(sub.active_until) > new Date());
+    const totalSessions = sessionCount ?? 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let creditsRow: { sessions_remaining: number } | null = null;
 
-    if (isPaid) {
-      // Paid users: check sessions used this calendar month
-      const monthStart = new Date();
-      monthStart.setDate(1);
-      monthStart.setHours(0, 0, 0, 0);
-      const { count: sessionsThisMonth } = await service
-        .from("sessions")
-        .select("*", { count: "exact", head: true })
+    if (totalSessions >= FREE_SESSION_LIMIT) {
+      // Free session already used — need a paid credit
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: cr } = await (service as any)
+        .from("credits")
+        .select("sessions_remaining")
         .eq("user_id", user.id)
-        .gte("created_at", monthStart.toISOString())
-        .in("status", ["complete", "generating", "analyzing"]);
-      const limit = sub.sessions_per_month ?? 3;
-      if ((sessionsThisMonth ?? 0) >= limit) {
-        return Response.json({ error: "monthly_limit_reached", limit }, { status: 402 });
-      }
-    } else {
-      // Free users: check lifetime count
-      const { count: sessionsUsed } = await service
-        .from("sessions")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .in("status", ["complete", "generating", "analyzing"]);
-      if ((sessionsUsed ?? 0) >= FREE_SESSION_LIMIT) {
+        .maybeSingle();
+      creditsRow = cr;
+      if (!creditsRow || creditsRow.sessions_remaining <= 0) {
         return Response.json(
-          { error: "free_limit_reached", sessionsUsed: sessionsUsed ?? 0 },
+          { error: "no_credits", sessionsUsed: totalSessions },
           { status: 402 }
         );
       }
@@ -100,6 +88,18 @@ export async function POST(request: Request) {
       .from("sessions")
       .update({ status: "analyzing" })
       .eq("id", session.id);
+
+    // Decrement credit for paid sessions
+    if (creditsRow) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (service as any)
+        .from("credits")
+        .update({
+          sessions_remaining: creditsRow.sessions_remaining - 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+    }
 
     return Response.json({ sessionId: session.id });
   } catch (err) {

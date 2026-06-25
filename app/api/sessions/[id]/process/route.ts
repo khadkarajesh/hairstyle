@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { STYLES, STYLE_FACE_FIT } from "@/lib/styles-data";
+import { STYLES, STYLES_MAP, STYLE_FACE_FIT } from "@/lib/styles-data";
 
 export const runtime = "nodejs";
 export const maxDuration = 30; // analysis only — no longer needs 120s
@@ -70,6 +70,51 @@ export async function POST(
           return;
         }
 
+        // Collect styles from prior sessions so Claude can avoid repeating them
+        // and learn from what the user explicitly saved
+        const { data: priorSessions } = await service
+          .from("sessions")
+          .select("id, selected_styles")
+          .eq("user_id", user.id)
+          .neq("id", id)
+          .not("selected_styles", "is", null);
+
+        const priorSessionIds = (priorSessions ?? []).map(
+          (s: { id: string }) => s.id
+        );
+        const seenStyleIds = new Set<string>(
+          (priorSessions ?? []).flatMap(
+            (s: { id: string; selected_styles: string[] | null }) => s.selected_styles ?? []
+          )
+        );
+        const seenList = [...seenStyleIds].join(", ");
+
+        // Styles user showed to barber = strongest intent signal (acted on it)
+        let barberStyleNames: string[] = [];
+        if (priorSessionIds.length > 0) {
+          const { data: barberRows } = await service
+            .from("session_styles")
+            .select("style_id")
+            .in("session_id", priorSessionIds)
+            .eq("shown_to_barber", true);
+          barberStyleNames = (barberRows ?? [])
+            .map((r: { style_id: string }) => STYLES_MAP[r.style_id]?.name)
+            .filter(Boolean) as string[];
+        }
+
+        // Styles the user saved = positive preference signal for session 2+
+        let savedStyleNames: string[] = [];
+        if (priorSessionIds.length > 0) {
+          const { data: savedRows } = await service
+            .from("session_styles")
+            .select("style_id")
+            .in("session_id", priorSessionIds)
+            .eq("saved", true);
+          savedStyleNames = (savedRows ?? [])
+            .map((r: { style_id: string }) => STYLES_MAP[r.style_id]?.name)
+            .filter(Boolean) as string[];
+        }
+
         // ── Analyze photos + select styles with Claude ────────────────────────
         ctrl.enqueue(sse({ step: "analyzing" }));
 
@@ -131,7 +176,13 @@ korean_perm - Soft permed waves, medium length all over
 hard_part - Razor-shaved side parting line, combed top
 high_skin_fade - Extreme high fade starting above temples
 
-Respond ONLY with valid JSON:
+${barberStyleNames.length > 0
+  ? `The user showed these styles to their actual barber (strongest signal — they committed to getting the look): ${barberStyleNames.join(", ")}. Weight heavily toward styles with similar length, texture, or structure. Natural evolutions of these styles are ideal. Do NOT recommend these exact styles.\n\n`
+  : ""}${savedStyleNames.length > 0
+  ? `The user previously saved these styles (they liked them): ${savedStyleNames.join(", ")}. Weight your recommendations toward styles with similar texture, length, or structure — these reveal their taste. Do NOT recommend the saved styles themselves; they want to discover new looks.\n\n`
+  : ""}${seenList
+  ? `The user has already seen these styles in a previous session: ${seenList}. Prefer styles NOT in this list — only include a previously-seen style if it is clearly the best fit for this face.\n\n`
+  : ""}Respond ONLY with valid JSON:
 {
   "face_shape": "oval|round|square|heart|diamond|oblong",
   "hair_type": "straight|wavy|curly",

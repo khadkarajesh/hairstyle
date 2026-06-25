@@ -18,8 +18,57 @@ const HAS_SUPABASE =
   !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const FREE_LIMIT = 1;
+const TIP_KEY = "hs_photo_tip_v1";
 
-function CameraModal({ onCapture, onClose }: { onCapture: (file: File) => void; onClose: () => void }) {
+function PhotoTipCard({ onDismiss }: { onDismiss: () => void }) {
+  const tips = [
+    { label: "FRONT", hint: "Face forward\nfill the frame", isProfile: false },
+    { label: "LEFT",  hint: "Turn head left\near visible",   isProfile: true  },
+    { label: "RIGHT", hint: "Turn head right\near visible",  isProfile: true  },
+  ];
+  return (
+    <div style={{ borderRadius: 14, background: "#15121f", border: "1px solid #2a2540", padding: "14px 16px", marginTop: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 9, color: "#a78bfa", letterSpacing: ".06em" }}>FOR BEST RESULTS</span>
+        <button onClick={onDismiss} style={{ background: "none", border: "none", color: "#4a4568", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1 }}>✕</button>
+      </div>
+      <div style={{ fontWeight: 700, fontSize: 13, marginTop: 6 }}>Better photos → better hairstyle previews</div>
+      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        {tips.map(({ label, hint, isProfile }) => (
+          <div key={label} style={{ flex: 1, textAlign: "center" }}>
+            <svg viewBox="0 0 44 54" width="44" height="54" style={{ display: "block", margin: "0 auto" }}>
+              {/* Alignment oval */}
+              <ellipse cx="22" cy="25" rx="17" ry="21" fill="none" stroke="#3a3358" strokeWidth="1.2" strokeDasharray="3 2"/>
+              {/* Head */}
+              <ellipse cx="22" cy="22" rx="10" ry="12" fill="#2a2445"/>
+              {/* Neck */}
+              <rect x="18" y="33" width="8" height="6" rx="3" fill="#2a2445"/>
+              {/* Shoulders */}
+              <path d="M8 50 Q22 43 36 50" fill="none" stroke="#2a2445" strokeWidth="2.5" strokeLinecap="round"/>
+              {/* Profile nose indicator */}
+              {isProfile && <path d="M28 18 Q34 23 30 28" fill="none" stroke="#4a3a70" strokeWidth="1.5" strokeLinecap="round"/>}
+              {/* Front center dot */}
+              {!isProfile && <circle cx="22" cy="24" r="1.5" fill="#7c3aed" opacity="0.7"/>}
+            </svg>
+            <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 8, color: "#a78bfa", letterSpacing: ".05em", marginTop: 5 }}>{label}</div>
+            <div style={{ fontSize: 9, color: "#6b6485", marginTop: 3, lineHeight: 1.4, whiteSpace: "pre-line" }}>{hint}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: 10, fontSize: 10, color: "#4a4568", lineHeight: 1.6 }}>
+        ✓ Good lighting &nbsp;·&nbsp; ✓ No hat or glasses &nbsp;·&nbsp; ✓ Shoulders visible
+      </div>
+      <button
+        onClick={onDismiss}
+        style={{ marginTop: 10, width: "100%", height: 36, borderRadius: 10, background: "transparent", border: "1px solid #2a2540", color: "#9b94b8", fontWeight: 600, fontSize: 12, cursor: "pointer" }}
+      >
+        Got it
+      </button>
+    </div>
+  );
+}
+
+function CameraModal({ slotLabel, onCapture, onClose }: { slotLabel: string; onCapture: (file: File) => void; onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [ready, setReady] = useState(false);
@@ -60,10 +109,36 @@ function CameraModal({ onCapture, onClose }: { onCapture: (file: File) => void; 
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "#000", zIndex: 100, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-      <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", maxWidth: 540, aspectRatio: "4/3", objectFit: "cover", transform: "scaleX(-1)", background: "#111" }} />
-      {!ready && (
-        <div style={{ position: "absolute", color: "#9b94b8", fontSize: 13, fontFamily: "var(--font-space-mono)" }}>STARTING CAMERA…</div>
-      )}
+      {/* Video + oval overlay */}
+      <div style={{ position: "relative", width: "100%", maxWidth: 540 }}>
+        <video
+          ref={videoRef} autoPlay playsInline muted
+          style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", transform: "scaleX(-1)", background: "#111", display: "block" }}
+        />
+        {/* Face alignment oval */}
+        <svg
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}
+          viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet"
+        >
+          <ellipse cx="50" cy="38" rx="26" ry="32"
+            fill="rgba(124,58,237,.07)"
+            stroke="rgba(167,139,250,.75)"
+            strokeWidth="0.7"
+            strokeDasharray="3 2"
+          />
+        </svg>
+        {/* Angle label top */}
+        <div style={{ position: "absolute", top: 14, left: 0, right: 0, textAlign: "center", fontFamily: "var(--font-space-mono)", fontSize: 11, color: "rgba(167,139,250,.9)", letterSpacing: ".06em", textShadow: "0 1px 6px rgba(0,0,0,.8)" }}>
+          {slotLabel.toUpperCase()} VIEW
+        </div>
+        {/* Instruction bottom */}
+        <div style={{ position: "absolute", bottom: 12, left: 0, right: 0, textAlign: "center", fontFamily: "var(--font-space-mono)", fontSize: 9, color: "rgba(167,139,250,.7)", letterSpacing: ".04em", textShadow: "0 1px 4px rgba(0,0,0,.8)" }}>
+          FILL THE OVAL · SHOULDERS IN FRAME
+        </div>
+        {!ready && (
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#9b94b8", fontSize: 13, fontFamily: "var(--font-space-mono)" }}>STARTING CAMERA…</div>
+        )}
+      </div>
       <div style={{ padding: "22px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", maxWidth: 540 }}>
         <button
           onClick={() => { stop(); onClose(); }}
@@ -85,13 +160,23 @@ export default function UploadPage() {
   const [photos, setPhotos] = useState<Partial<Record<SlotId, File>>>({});
   const [uploading, setUploading] = useState(false);
   const [sessionsUsed, setSessionsUsed] = useState<number | null>(null);
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraSlot, setCameraSlot] = useState<SlotId>("front");
   const [inputMode, setInputMode] = useState<"camera" | "gallery">("gallery");
+  const [showTip, setShowTip] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const activeSlotRef = useRef<SlotId>("front");
 
   const filledCount = Object.keys(photos).length;
-  const atLimit = sessionsUsed !== null && sessionsUsed >= FREE_LIMIT;
+  const atLimit = sessionsUsed !== null
+    && sessionsUsed >= FREE_LIMIT
+    && (creditsRemaining === null || creditsRemaining <= 0);
+
+  // Show photo tip on first visit
+  useEffect(() => {
+    if (!localStorage.getItem(TIP_KEY)) setShowTip(true);
+  }, []);
 
   // Fetch how many sessions this user has used
   useEffect(() => {
@@ -110,6 +195,14 @@ export default function UploadPage() {
         .eq("user_id", user.id)
         .in("status", ["complete", "generating", "analyzing"]);
       setSessionsUsed(count ?? 0);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: cr } = await (supabase as any)
+        .from("credits")
+        .select("sessions_remaining")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cr !== null) setCreditsRemaining(cr.sessions_remaining);
     };
     fetchCount();
   }, []);
@@ -131,6 +224,7 @@ export default function UploadPage() {
 
   const openCamera = (slotId: SlotId) => {
     activeSlotRef.current = slotId;
+    setCameraSlot(slotId);
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isMobile) {
       if (inputRef.current) {
@@ -177,6 +271,7 @@ export default function UploadPage() {
     <AppShell>
     {cameraOpen && (
       <CameraModal
+        slotLabel={SLOTS.find(s => s.id === cameraSlot)?.label ?? "Front"}
         onCapture={handleCameraCapture}
         onClose={() => setCameraOpen(false)}
       />
@@ -194,9 +289,11 @@ export default function UploadPage() {
           <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: atLimit ? "#f87171" : "#a78bfa" }}>
             {sessionsUsed === null
               ? ""
-              : atLimit
-                ? "FREE LIMIT REACHED"
-                : `${FREE_LIMIT - sessionsUsed} FREE SESSION${FREE_LIMIT - sessionsUsed === 1 ? "" : "S"} LEFT`}
+              : creditsRemaining !== null && creditsRemaining > 0
+                ? `${creditsRemaining} SESSION${creditsRemaining !== 1 ? "S" : ""} REMAINING`
+                : atLimit
+                  ? "NO SESSIONS LEFT"
+                  : "1 FREE SESSION"}
           </span>
         </div>
 
@@ -209,7 +306,7 @@ export default function UploadPage() {
         {atLimit && (
           <div style={{ marginTop: 14, borderRadius: 12, background: "rgba(248,113,113,.1)", border: "1px solid rgba(248,113,113,.25)", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
             <div style={{ fontSize: 13, color: "#fca5a5", lineHeight: 1.4 }}>
-              You&apos;ve used your free session.
+              No sessions left. Buy a pack to continue.
             </div>
             <Link href="/upgrade" style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#a78bfa", fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
               UPGRADE →
@@ -221,6 +318,14 @@ export default function UploadPage() {
         <div style={{ height: 5, borderRadius: 3, background: "#211d33", marginTop: 18, overflow: "hidden" }}>
           <div style={{ height: "100%", width: `${(filledCount / 3) * 100}%`, background: "linear-gradient(90deg,#a78bfa,#7c3aed)", borderRadius: 3, transition: "width .3s" }} />
         </div>
+
+        {/* First-visit photo tips */}
+        {showTip && (
+          <PhotoTipCard onDismiss={() => {
+            localStorage.setItem(TIP_KEY, "1");
+            setShowTip(false);
+          }} />
+        )}
 
         {/* Slots */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 20 }}>

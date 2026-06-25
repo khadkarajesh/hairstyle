@@ -18,13 +18,13 @@ function UpgradeModal({ feature, onClose }: { feature: string; onClose: () => vo
           {feature}
         </h2>
         <p style={{ fontSize: 14, color: "#9b94b8", textAlign: "center", marginTop: 10, lineHeight: 1.55, maxWidth: 280, margin: "10px auto 0" }}>
-          Upgrade to Standard to unlock this feature and get 3 fresh sessions every month.
+          Buy a session pack to unlock this feature. Credits never expire.
         </p>
         <Link
           href="/upgrade"
           style={{ marginTop: 22, height: 52, borderRadius: 14, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, color: "#fff", textDecoration: "none", boxShadow: "0 12px 26px -10px rgba(124,58,237,.8)" }}
         >
-          Upgrade to Standard — NPR 499/mo
+          Buy sessions — from NPR 199
         </Link>
         <button
           onClick={onClose}
@@ -133,15 +133,14 @@ export default function ComparePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      // Check subscription plan to gate paid features
+      // Gate paid features: user is "paid" if they have ever bought credits
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: sub } = await (supabase as any)
-        .from("subscriptions")
-        .select("plan, active_until")
+      const { data: cr } = await (supabase as any)
+        .from("credits")
+        .select("sessions_remaining")
         .eq("user_id", user.id)
         .maybeSingle();
-      const paid = !!(sub?.active_until && new Date(sub.active_until) > new Date());
-      setIsPaid(paid);
+      setIsPaid(cr !== null); // any credits row = has purchased at least once
 
       const angles: Angle[] = ["front", "left", "right"];
       const signed = await Promise.all(
@@ -477,7 +476,21 @@ export default function ComparePage() {
           <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 700, fontSize: 16, letterSpacing: "-.01em" }}>{style.name}</div>
           <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 9, color: "#a78bfa" }}>{styleIdx + 1} / {navStyles.length}</div>
         </div>
-        <button style={{ color: "#cdc6e3", fontSize: 18, background: "none", border: "none", cursor: "pointer" }}>♡</button>
+        <button
+          onClick={async () => {
+            if (SANDBOX || !HAS_SUPABASE) return;
+            const next = !isSaved;
+            setIsSaved(next);
+            await fetch(`/api/sessions/${id}/styles/${styleId}/save`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ saved: next }),
+            });
+          }}
+          style={{ color: isSaved ? "#fb7185" : "#cdc6e3", fontSize: 18, background: "none", border: "none", cursor: "pointer" }}
+        >
+          {isSaved ? "♥" : "♡"}
+        </button>
       </div>
 
       {/* Angle tabs */}
@@ -536,14 +549,11 @@ export default function ComparePage() {
 
         <div style={{ display: "flex", gap: 8 }}>
           <button
-            onClick={() => {
-              if (!isPaid) { setUpgradePrompt("Show Barber is a Standard feature"); return; }
-              setShowBarber(true);
-            }}
+            onClick={() => { if (afterUrl) setShowBarber(true); }}
             disabled={!afterUrl}
-            style={{ flex: 1, height: 50, borderRadius: 13, background: "#181527", border: "1px solid #2a2540", fontWeight: 700, fontSize: 12, color: afterUrl ? (isPaid ? "#cdc6e3" : "#6b6485") : "#3a3358", cursor: afterUrl ? "pointer" : "default", position: "relative" }}
+            style={{ flex: 1, height: 50, borderRadius: 13, background: "#181527", border: "1px solid #2a2540", fontWeight: 700, fontSize: 12, color: afterUrl ? "#cdc6e3" : "#3a3358", cursor: afterUrl ? "pointer" : "default", position: "relative" }}
           >
-            ✂ Show Barber{!isPaid && <span style={{ marginLeft: 4, fontSize: 10 }}>🔒</span>}
+            ✂ Show Barber
           </button>
           <button
             onClick={handleShare}
@@ -575,7 +585,6 @@ export default function ComparePage() {
           </button>
           <button
             onClick={async () => {
-              if (!isPaid) { setUpgradePrompt("Save looks is a Standard feature"); return; }
               if (SANDBOX || !HAS_SUPABASE) return;
               const next = !isSaved;
               setIsSaved(next);
@@ -585,9 +594,9 @@ export default function ComparePage() {
                 body: JSON.stringify({ saved: next }),
               });
             }}
-            style={{ flex: 1, height: 50, borderRadius: 13, background: isSaved ? "linear-gradient(135deg,#8b5cf6,#7c3aed)" : "#181527", border: isSaved ? "none" : "1px solid #2a2540", fontWeight: 700, fontSize: 14, color: isSaved ? "#fff" : (isPaid ? "#cdc6e3" : "#6b6485"), cursor: "pointer", boxShadow: isSaved ? "0 12px 26px -10px rgba(124,58,237,.8)" : "none", transition: "all .2s" }}
+            style={{ flex: 1, height: 50, borderRadius: 13, background: isSaved ? "linear-gradient(135deg,#8b5cf6,#7c3aed)" : "#181527", border: isSaved ? "none" : "1px solid #2a2540", fontWeight: 700, fontSize: 14, color: isSaved ? "#fff" : "#cdc6e3", cursor: "pointer", boxShadow: isSaved ? "0 12px 26px -10px rgba(124,58,237,.8)" : "none", transition: "all .2s" }}
           >
-            {isSaved ? "♥ Saved" : isPaid ? "♡ Save" : "🔒 Save"}
+            {isSaved ? "♥ Saved" : "♡ Save"}
           </button>
         </div>
 
