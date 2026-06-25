@@ -41,7 +41,7 @@ export async function POST(
     .select("image_url, image_url_left, image_url_right")
     .eq("session_id", id)
     .eq("style_id", styleId)
-    .single();
+    .maybeSingle();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ((styleRow as any)?.[col]) {
