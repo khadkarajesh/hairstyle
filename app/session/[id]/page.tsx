@@ -75,6 +75,7 @@ export default function ResultsPage() {
   const [generatedCount, setGeneratedCount]   = useState(0);
   const [sessionCreatedAt, setCreatedAt]      = useState<string | null>(null);
   const [showBarberPrompt, setShowBarberPrompt] = useState(false);
+  const [sessionNumber, setSessionNumber]       = useState<number | null>(null);
   const [reminderDate, setReminderDate]       = useState<Date | null>(null);
   const [reminderJustSet, setReminderJustSet] = useState(false);
   const [billingError, setBillingError]       = useState(false);
@@ -96,6 +97,20 @@ export default function ResultsPage() {
       if (sessionRow?.selected_styles) setSelected(sessionRow.selected_styles);
       if (sessionRow?.hair_attributes) setHairAttrs(sessionRow.hair_attributes);
       if (sessionRow?.created_at)      setCreatedAt(sessionRow.created_at);
+
+      // Count sessions up to and including this one to get the session number
+      if (sessionRow?.created_at) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { count } = await (supabase as any)
+            .from("sessions")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .lte("created_at", sessionRow.created_at);
+          if (count !== null) setSessionNumber(count);
+        }
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase as any)
@@ -249,7 +264,9 @@ export default function ResultsPage() {
         <div style={{ padding: "12px 18px 10px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: "#9b94b8", fontSize: 13, fontWeight: 600 }}>
             <Link href="/profile" style={{ color: "#9b94b8", textDecoration: "none" }}>‹ Sessions</Link>
-            <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 11, color: "#a78bfa" }}>SESSION 01</span>
+            <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 11, color: "#a78bfa" }}>
+              {sessionNumber !== null ? `SESSION ${String(sessionNumber).padStart(2, "0")}` : "SESSION"}
+            </span>
           </div>
           <h1 style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 27, letterSpacing: "-.02em", marginTop: 12 }}>
             {displayStyles.length > 0

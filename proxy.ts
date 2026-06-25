@@ -9,7 +9,7 @@ const HAS_SUPABASE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 const PROTECTED = ["/upload", "/session", "/profile", "/upgrade"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Skip auth in sandbox mode or when Supabase isn't configured
   if (SANDBOX || !HAS_SUPABASE) {
     return NextResponse.next();
