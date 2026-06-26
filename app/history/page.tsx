@@ -22,6 +22,7 @@ export default function HistoryPage() {
   const [sessionsUsed, setSessionsUsed] = useState(0);
   const [creditsRemaining, setCredits]  = useState<number | null>(null);
   const [loading, setLoading]           = useState(true);
+  const [thumbnails, setThumbnails]     = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (SANDBOX || !HAS_SUPABASE) { setLoading(false); return; }
@@ -51,7 +52,26 @@ export default function HistoryPage() {
           .maybeSingle(),
       ]);
 
-      if (data) setSessions(data);
+      if (data) {
+        setSessions(data);
+        // Fetch first generated image per session for thumbnails
+        const ids = data.map((s: SessionRow) => s.id);
+        if (ids.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: styleRows } = await (supabase as any)
+            .from("session_styles")
+            .select("session_id, image_url")
+            .in("session_id", ids)
+            .not("image_url", "is", null);
+          if (styleRows) {
+            const map: Record<string, string> = {};
+            for (const row of styleRows as { session_id: string; image_url: string }[]) {
+              if (!map[row.session_id]) map[row.session_id] = row.image_url;
+            }
+            setThumbnails(map);
+          }
+        }
+      }
       if (count != null) setSessionsUsed(count);
       if (cr != null) setCredits(cr.sessions_remaining);
       setLoading(false);
@@ -92,15 +112,13 @@ export default function HistoryPage() {
                 href={`/session/${s.id}`}
                 style={{ display: "flex", alignItems: "center", gap: 12, background: "#15121f", border: "1px solid #2a2540", borderRadius: 13, padding: 11, textDecoration: "none", color: "#f4f2fb" }}
               >
-                {/* Style preview thumbnails */}
-                <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
-                  {[0, 1].map(i => {
-                    const styleId = s.selected_styles?.[i];
-                    const hue = styleId
-                      ? ((styleId.charCodeAt(0) * 7 + styleId.charCodeAt(1) * 13) % 80 + 260)
-                      : 290 + idx * 20;
-                    return <div key={i} style={{ width: 30, height: 40, borderRadius: 7, background: stripeBg(hue) }} />;
-                  })}
+                {/* Session thumbnail — real generated image if available */}
+                <div style={{ width: 52, height: 68, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: "#1d1930", position: "relative" }}>
+                  {thumbnails[s.id] ? (
+                    <img src={thumbnails[s.id]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", background: stripeBg(290 + idx * 20) }} />
+                  )}
                 </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>

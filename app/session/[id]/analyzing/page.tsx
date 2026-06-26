@@ -14,6 +14,7 @@ export default function AnalyzingPage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
   const [steps, setSteps] = useState(STEPS_INITIAL);
+  const [failed, setFailed] = useState(false);
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
 
   useEffect(() => {
@@ -76,14 +77,14 @@ export default function AnalyzingPage() {
                   setTimeout(() => router.replace(`/session/${id}`), 400);
                   break;
                 case "error":
-                  router.replace(`/session/${id}`);
+                  setFailed(true);
                   break;
               }
             } catch { /* malformed line */ }
           }
         }
       } catch {
-        if (!cancelled) router.replace(`/session/${id}`);
+        if (!cancelled) setFailed(true);
       }
     };
 
@@ -93,6 +94,28 @@ export default function AnalyzingPage() {
       readerRef.current?.cancel();
     };
   }, [id, router]);
+
+  if (failed) {
+    return (
+      <AppShell>
+      <div style={{ minHeight: "100dvh", background: "#0f0d17", color: "#f4f2fb", fontFamily: "var(--font-hanken), sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, textAlign: "center" }}>
+        <div style={{ fontSize: 40, marginBottom: 16 }}>✂</div>
+        <h1 style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 26, letterSpacing: "-.025em", lineHeight: 1.1, margin: "0 0 12px" }}>
+          Analysis failed
+        </h1>
+        <p style={{ fontSize: 14, color: "#9b94b8", lineHeight: 1.55, maxWidth: 260, margin: "0 auto 28px" }}>
+          Something went wrong reading your photos. Please try again — it usually works on the second attempt.
+        </p>
+        <button
+          onClick={() => router.replace("/upload")}
+          style={{ height: 50, borderRadius: 14, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", border: "none", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", padding: "0 32px", boxShadow: "0 12px 26px -10px rgba(124,58,237,.8)" }}
+        >
+          Try again
+        </button>
+      </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
@@ -143,7 +166,7 @@ export default function AnalyzingPage() {
       </div>
 
       <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 11, color: "#6b6485", marginTop: 26, letterSpacing: ".05em" }}>
-        USUALLY ~10 SECONDS
+        USUALLY ~30 SECONDS
       </div>
 
     </div>

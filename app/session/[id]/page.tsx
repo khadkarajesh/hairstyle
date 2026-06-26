@@ -34,6 +34,16 @@ function saveReminder(sessionId: string) {
   } catch { return null; }
 }
 
+function openCalendarReminder(due: Date) {
+  const title = encodeURIComponent("Haircut time 💈");
+  const details = encodeURIComponent("Time for a fresh look. Open Banlah to pick your next style.");
+  const dateStr = due.toISOString().slice(0, 10).replace(/-/g, "");
+  window.open(
+    `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dateStr}/${dateStr}&details=${details}`,
+    "_blank", "noopener,noreferrer"
+  );
+}
+
 function formatDate(d: Date) {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
@@ -218,7 +228,7 @@ export default function ResultsPage() {
 
   const handleSetReminder = () => {
     const due = saveReminder(params.id);
-    if (due) { setReminderDate(due); setReminderJustSet(true); }
+    if (due) { setReminderDate(due); setReminderJustSet(true); openCalendarReminder(due); }
   };
 
   const toggleSave = async (e: React.MouseEvent, sid: string) => {
@@ -471,9 +481,9 @@ export default function ResultsPage() {
               <div style={{ fontSize: 12, color: "#9b94b8", marginTop: 2, lineHeight: 1.4 }}>
                 {reminderDate
                   ? reminderJustSet
-                    ? `Reminder set for ${formatDate(reminderDate)}`
-                    : `Next cut due around ${formatDate(reminderDate)}`
-                  : "Remind me when it's time for my next cut"}
+                    ? `Added to calendar — ${formatDate(reminderDate)}`
+                    : `Next cut around ${formatDate(reminderDate)}`
+                  : "Add a reminder for your next cut"}
               </div>
             </div>
             {!reminderDate && (
@@ -481,15 +491,15 @@ export default function ResultsPage() {
                 onClick={handleSetReminder}
                 style={{ height: 36, borderRadius: 10, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", border: "none", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", padding: "0 14px", whiteSpace: "nowrap" }}
               >
-                Set · 5 wks
+                Add to calendar
               </button>
             )}
             {reminderDate && (
               <button
-                onClick={() => { saveReminder(params.id); const d = getReminderDate(params.id); setReminderDate(d); setReminderJustSet(true); }}
+                onClick={() => { const due = saveReminder(params.id); if (due) { setReminderDate(due); setReminderJustSet(true); openCalendarReminder(due); } }}
                 style={{ height: 36, borderRadius: 10, background: "transparent", border: "1px solid #2a2540", color: "#9b94b8", fontWeight: 600, fontSize: 11, cursor: "pointer", padding: "0 12px", whiteSpace: "nowrap" }}
               >
-                Reset
+                Reschedule
               </button>
             )}
           </div>

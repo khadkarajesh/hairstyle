@@ -3,16 +3,30 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV = [
-  { href: "/session/latest", label: "Home",    icon: "square"   },
-  { href: "/history",        label: "History", icon: "circle-o" },
-  { href: "/profile",        label: "Profile", icon: "circle"   },
+  { href: "/session/latest", label: "Home",    icon: "home"    },
+  { href: "/history",        label: "History", icon: "history" },
+  { href: "/profile",        label: "Profile", icon: "profile" },
 ];
 
 function Icon({ type, active }: { type: string; active: boolean }) {
   const color = active ? "#a78bfa" : "#6b6485";
-  if (type === "square")   return <span style={{ width:18, height:18, borderRadius:6, background:color, display:"block" }} />;
-  if (type === "circle-o") return <span style={{ width:18, height:18, borderRadius:"50%", border:`2px solid ${color}`, display:"block" }} />;
-  return <span style={{ width:18, height:18, borderRadius:"50%", background:color, display:"block" }} />;
+  if (type === "home") return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M3 8.5L10 2.5L17 8.5V17H13V12H7V17H3V8.5Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" fill={active ? color : "none"} fillOpacity={active ? 0.15 : 0} />
+    </svg>
+  );
+  if (type === "history") return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="7" stroke={color} strokeWidth="1.6" />
+      <path d="M10 6V10L13 12" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="7" r="3" stroke={color} strokeWidth="1.6" fill={active ? color : "none"} fillOpacity={active ? 0.15 : 0} />
+      <path d="M4 17c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 export default function BottomNav() {
@@ -29,8 +43,8 @@ export default function BottomNav() {
         const active = item.label === "Profile"
           ? path === "/profile"
           : item.label === "History"
-          ? path === "/history"
-          : path.startsWith("/session");
+          ? path === "/history" || path === "/new-session"
+          : path.startsWith("/session") || path === "/upload" || path === "/guide";
         return (
           <Link key={item.href} href={item.href} style={{
             display:"flex", flexDirection:"column", alignItems:"center", gap:4,

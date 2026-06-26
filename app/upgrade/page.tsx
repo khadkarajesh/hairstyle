@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import AppShell from "@/components/AppShell";
 import { createClient } from "@/lib/supabase/client";
@@ -15,6 +15,7 @@ const PACKS = [
 type PackId = (typeof PACKS)[number]["id"];
 
 function UpgradeContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const hitLimit = searchParams.get("reason") === "limit";
   const [selected, setSelected] = useState<PackId>("value");
@@ -28,7 +29,7 @@ function UpgradeContent() {
 
   const pack = PACKS.find(p => p.id === selected)!;
   const waMsg = encodeURIComponent(
-    `Hi, I want to buy the ${pack.name} (${pack.sessions} session${pack.sessions > 1 ? "s" : ""}) for NPR ${pack.price} on HairStyle AI.${email ? ` My account email: ${email}` : ""}`
+    `Hi, I want to buy the ${pack.name} (${pack.sessions} session${pack.sessions > 1 ? "s" : ""}) for NPR ${pack.price} on Banlah.${email ? ` My account email: ${email}` : ""}`
   );
 
   return (
@@ -40,7 +41,7 @@ function UpgradeContent() {
 
         {/* Close */}
         <div style={{ textAlign: "right" }}>
-          <Link href="/upload" style={{ color: "#9b94b8", textDecoration: "none", fontSize: 20 }}>✕</Link>
+          <button onClick={() => router.back()} style={{ color: "#9b94b8", fontSize: 20, background: "none", border: "none", cursor: "pointer", padding: 4 }} aria-label="Close">✕</button>
         </div>
 
         {/* Eyebrow + headline */}

@@ -85,6 +85,7 @@ export default function ComparePage() {
   const [isPaid, setIsPaid]           = useState(SANDBOX); // unlocked in sandbox, locked until confirmed in prod
   const [upgradePrompt, setUpgradePrompt] = useState<string | null>(null);
   const autoTriggeredRef = useRef(false);
+  const swipeTouchStart = useRef<{ x: number; y: number; onSlider: boolean } | null>(null);
 
   // Navigation uses the session's personalised style list; fall back to full catalog
   const navStyles = sessionStyleIds.length > 0
@@ -245,7 +246,7 @@ export default function ComparePage() {
     setSharing(true);
     try {
       const sharePayload = {
-        title: `${style.name} · HairStyle AI`,
+        title: `${style.name} · Banlah`,
         text: `Check out this hairstyle I'm thinking of getting — ${style.name}`,
         url: window.location.href,
       };
@@ -321,11 +322,11 @@ export default function ComparePage() {
       <AppShell>
       <div
         onClick={() => setShowBarber(false)}
-        style={{ position: "fixed", inset: 0, zIndex: 100, background: "#000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+        style={{ position: "fixed", inset: 0, zIndex: 100, background: "#000", display: "flex", flexDirection: "column", cursor: "pointer" }}
       >
-        <div style={{ position: "relative", width: "100%", flex: 1 }}>
+        <div style={{ position: "relative", width: "100%", flex: 1, overflow: "hidden" }}>
           {afterUrl
-            ? <Image src={afterUrl} alt={style.name} fill style={{ objectFit: "contain" }} sizes="390px" />
+            ? <Image src={afterUrl} alt={style.name} fill style={{ objectFit: "cover", objectPosition: "center top" }} sizes="390px" />
             : (
               <div style={{ position: "absolute", inset: 0, background: stripeBg(style.hue), display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <div style={{ width: 160, height: 160, borderRadius: "50%", border: "2px solid rgba(255,255,255,.3)" }} />
@@ -333,10 +334,10 @@ export default function ComparePage() {
             )
           }
         </div>
-        <div style={{ padding: "18px 24px 32px", textAlign: "center", width: "100%" }}>
+        <div style={{ padding: "18px 24px 40px", textAlign: "center", width: "100%", background: "rgba(0,0,0,.85)" }}>
           <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 22, color: "#f4f2fb", letterSpacing: "-.02em" }}>{style.name}</div>
           <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#a78bfa", letterSpacing: ".08em", marginTop: 4 }}>{style.tag} · {ANGLE_LABELS[activeAngle].toUpperCase()} VIEW</div>
-          <div style={{ fontSize: 12, color: "#6b6485", marginTop: 14 }}>Show this screen to your barber · tap anywhere to close</div>
+          <div style={{ fontSize: 13, color: "#9b94b8", marginTop: 14, fontWeight: 500 }}>Tap anywhere to close</div>
         </div>
       </div>
       </AppShell>
@@ -464,33 +465,40 @@ export default function ComparePage() {
     );
   };
 
+  const onTouchStart = (e: React.TouchEvent) => {
+    const onSlider = containerRef.current?.contains(e.target as Node) ?? false;
+    swipeTouchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, onSlider };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (!swipeTouchStart.current) return;
+    const { x: startX, y: startY, onSlider } = swipeTouchStart.current;
+    swipeTouchStart.current = null;
+    if (onSlider) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    if (dx < 0) router.push(`/session/${id}/style/${nextStyle.id}`);
+    else router.push(`/session/${id}/style/${prevStyle.id}`);
+  };
+
   return (
     <AppShell>
-    <div style={{ height: "100dvh", background: "#0b0911", color: "#f4f2fb", fontFamily: "var(--font-hanken), sans-serif", display: "flex", flexDirection: "column", maxWidth: 390, margin: "0 auto" }}>
+    <div
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      style={{ height: "100dvh", background: "#0b0911", color: "#f4f2fb", fontFamily: "var(--font-hanken), sans-serif", display: "flex", flexDirection: "column", maxWidth: 390, margin: "0 auto" }}
+    >
       <div style={{ height: 44 }} />
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 18px 10px", flexShrink: 0 }}>
-        <button onClick={() => router.back()} style={{ color: "#cdc6e3", fontSize: 20, background: "none", border: "none", cursor: "pointer" }}>✕</button>
+        <button onClick={() => router.back()} aria-label="Close" style={{ color: "#cdc6e3", fontSize: 20, background: "none", border: "none", cursor: "pointer", padding: 8 }}>✕</button>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 700, fontSize: 16, letterSpacing: "-.01em" }}>{style.name}</div>
           <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 9, color: "#a78bfa" }}>{styleIdx + 1} / {navStyles.length}</div>
         </div>
-        <button
-          onClick={async () => {
-            if (SANDBOX || !HAS_SUPABASE) return;
-            const next = !isSaved;
-            setIsSaved(next);
-            await fetch(`/api/sessions/${id}/styles/${styleId}/save`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ saved: next }),
-            });
-          }}
-          style={{ color: isSaved ? "#fb7185" : "#cdc6e3", fontSize: 18, background: "none", border: "none", cursor: "pointer" }}
-        >
-          {isSaved ? "♥" : "♡"}
-        </button>
+        {/* Spacer to balance header */}
+        <div style={{ width: 36 }} />
       </div>
 
       {/* Angle tabs */}
@@ -521,7 +529,7 @@ export default function ComparePage() {
             >
               {ANGLE_LABELS[angle].toUpperCase()}
               {angle !== "front" && !isPaid && (
-                <span style={{ position: "absolute", top: 5, right: 6, fontSize: 8, color: "#3a3358" }}>🔒</span>
+                <span style={{ position: "absolute", top: 4, right: 5, background: "#2a2045", border: "1px solid #3a3358", borderRadius: 4, fontSize: 8, color: "#9b94b8", padding: "1px 4px", lineHeight: "12px", letterSpacing: ".02em" }}>PRO</span>
               )}
               {angle !== "front" && isPaid && (
                 <span style={{
@@ -600,14 +608,17 @@ export default function ComparePage() {
           </button>
         </div>
 
-        {/* Progress dots */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 6 }}>
+        {/* Progress dots — padded for minimum 44px touch target */}
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
           {navStyles.map((s, i) => (
-            <div
+            <button
               key={s.id}
               onClick={() => router.push(`/session/${id}/style/${s.id}`)}
-              style={{ width: i === styleIdx ? 18 : 6, height: 6, borderRadius: 3, background: i === styleIdx ? "#a78bfa" : "#3a3358", cursor: "pointer", transition: "all .2s" }}
-            />
+              aria-label={`Style ${i + 1}: ${s.name}`}
+              style={{ padding: "12px 5px", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}
+            >
+              <div style={{ width: i === styleIdx ? 18 : 6, height: 6, borderRadius: 3, background: i === styleIdx ? "#a78bfa" : "#3a3358", transition: "all .2s" }} />
+            </button>
           ))}
         </div>
       </div>

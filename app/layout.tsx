@@ -24,9 +24,9 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HairStyle AI Nepal — See your next cut before the scissors touch",
+  title: "Banlah — See your next haircut before the scissors touch",
   description:
-    "Upload 3 photos, get 10 AI hairstyle previews on your actual face. Built for Kathmandu professionals.",
+    "Upload 3 photos, get AI hairstyle previews on your actual face. Built for Nepal. Banlah (बांलाः) means 'looking good' in Newari.",
   manifest: "/manifest.json",
 };
 

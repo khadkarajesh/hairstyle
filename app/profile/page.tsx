@@ -48,7 +48,8 @@ export default function ProfilePage() {
         .from("session_styles")
         .select("session_id, style_id, image_url")
         .eq("saved", true)
-        .limit(6);
+        .order("created_at", { ascending: false })
+        .limit(12);
       if (saved) setSaved(saved);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -92,34 +93,29 @@ export default function ProfilePage() {
         </div>
 
         {/* Usage card */}
-        <div style={{ marginTop: 18, background: "#15121f", border: "1px solid #2a2540", borderRadius: 16, padding: 15 }}>
-          {creditsRemaining !== null ? (
-            <>
+        {(() => {
+          const remaining = creditsRemaining !== null
+            ? creditsRemaining
+            : Math.max(0, SESSION_LIMIT - sessionsUsed);
+          const isPaid = creditsRemaining !== null;
+          const low = remaining === 0;
+          return (
+            <div style={{ marginTop: 18, background: "#15121f", border: "1px solid #2a2540", borderRadius: 16, padding: 15 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={{ fontSize: 13, color: "#9b94b8", fontWeight: 600 }}>Sessions remaining</span>
-                <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 12, color: creditsRemaining > 0 ? "#a78bfa" : "#f87171" }}>
-                  {creditsRemaining} credit{creditsRemaining !== 1 ? "s" : ""}
+                <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 12, color: low ? "#f87171" : "#a78bfa" }}>
+                  {remaining} {isPaid ? "paid" : "free"}
                 </span>
               </div>
-              <Link href="/upgrade" style={{ marginTop: 13, height: 42, borderRadius: 11, background: "#1e1a30", border: "1px solid #3a3358", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 13, color: "#a78bfa", textDecoration: "none" }}>
-                Buy more sessions →
-              </Link>
-            </>
-          ) : (
-            <>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <span style={{ fontSize: 13, color: "#9b94b8", fontWeight: 600 }}>Sessions used</span>
-                <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 12 }}>{sessionsUsed} / {SESSION_LIMIT} free</span>
-              </div>
               <div style={{ height: 6, borderRadius: 3, background: "#211d33", marginTop: 10, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${usagePct}%`, background: "linear-gradient(90deg,#a78bfa,#7c3aed)", borderRadius: 3, transition: "width .4s ease" }} />
+                <div style={{ height: "100%", width: remaining === 0 ? "100%" : `${Math.min(100, remaining * 20)}%`, background: low ? "linear-gradient(90deg,#f87171,#ef4444)" : "linear-gradient(90deg,#a78bfa,#7c3aed)", borderRadius: 3, transition: "width .4s ease" }} />
               </div>
-              <Link href="/upgrade" style={{ marginTop: 13, height: 42, borderRadius: 11, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: "#fff", textDecoration: "none" }}>
-                Buy sessions — from NPR 199
+              <Link href="/upgrade" style={{ marginTop: 13, height: 42, borderRadius: 11, background: low ? "linear-gradient(135deg,#8b5cf6,#7c3aed)" : "#1e1a30", border: low ? "none" : "1px solid #3a3358", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: low ? 700 : 600, fontSize: 13, color: low ? "#fff" : "#a78bfa", textDecoration: "none", boxShadow: low ? "0 10px 22px -10px rgba(124,58,237,.7)" : "none" }}>
+                {low ? "Buy sessions — from NPR 199 →" : "Buy more sessions →"}
               </Link>
-            </>
-          )}
-        </div>
+            </div>
+          );
+        })()}
 
         {/* Saved looks */}
         <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 700, fontSize: 16, marginTop: 20 }}>Saved looks</div>

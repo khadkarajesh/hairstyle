@@ -30,7 +30,7 @@ export default async function LandingPage() {
       <nav className="l-nav">
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           <div style={{ width: 30, height: 30, borderRadius: 9, background: "linear-gradient(135deg,#a78bfa,#7c3aed)", boxShadow: "0 6px 16px -4px rgba(124,58,237,.7)", flexShrink: 0 }} />
-          <span style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 18, letterSpacing: "-.02em", whiteSpace: "nowrap" }}>HairStyle AI</span>
+          <span style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 18, letterSpacing: "-.02em", whiteSpace: "nowrap" }}>Banlah</span>
         </div>
         <div className="l-nav-links">
           <div className="l-nav-links-text">
@@ -165,7 +165,7 @@ export default async function LandingPage() {
           </div>
           {/* New way */}
           <div style={{ background: "linear-gradient(160deg,#1a1340,#15121f)", border: "1.5px solid #7c3aed", borderRadius: 18, padding: "28px 26px", boxShadow: "0 20px 50px -20px rgba(124,58,237,.45)" }}>
-            <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#34d399", letterSpacing: ".08em" }}>WITH HAIRSTYLE AI</div>
+            <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#34d399", letterSpacing: ".08em" }}>THE BANLAH WAY</div>
             <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 700, fontSize: 20, marginTop: 10 }}>Certainty before scissors</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 18, fontSize: 14, color: "#cdc6e3", lineHeight: 1.4 }}>
               <div>✓ AI renders the style <strong>on your actual face</strong></div>
@@ -234,7 +234,7 @@ export default async function LandingPage() {
             <p style={{ fontSize: 14, color: "#9b94b8", marginTop: 12, lineHeight: 1.65, marginBottom: 0 }}>
               No card needed. Your first session is completely free. For additional sessions, we accept <strong style={{ color: "#cdc6e3" }}>FonePay, eSewa, and cash</strong>.{" "}
               <a
-                href="https://wa.me/9779849696795?text=Hi%2C%20I%27d%20like%20to%20buy%20a%20HairStyle%20AI%20session%20credit"
+                href="https://wa.me/9779849696795?text=Hi%2C%20I%27d%20like%20to%20buy%20a%20Banlah%20session%20credit"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: "#a78bfa", textDecoration: "underline" }}
@@ -320,6 +320,26 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* Banlah meaning */}
+      <section style={{ textAlign: "center", padding: "52px 24px", borderTop: "1px solid #1c172b" }}>
+        <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 11, color: "#6b6485", letterSpacing: ".1em" }}>THE NAME</div>
+        <div style={{ marginTop: 14, display: "inline-flex", alignItems: "baseline", gap: 14, flexWrap: "wrap", justifyContent: "center" }}>
+          <span style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: "clamp(38px,8vw,60px)", letterSpacing: "-.03em", lineHeight: 1 }}>Banlah</span>
+          <span style={{ fontFamily: "var(--font-bricolage)", fontWeight: 700, fontSize: "clamp(22px,5vw,36px)", color: "#6b6485", letterSpacing: "-.01em" }}>बांलाः</span>
+        </div>
+        <p style={{ fontSize: 16, color: "#9b94b8", margin: "18px auto 0", lineHeight: 1.7, maxWidth: 480 }}>
+          A Newari word from the Kathmandu Valley, meaning{" "}
+          <em style={{ color: "#f4f2fb", fontStyle: "normal", fontWeight: 600 }}>"fine", "beautiful", "looking good"</em>.
+          It&apos;s what your friends say when you walk out of the barber&apos;s chair and it worked.
+          That&apos;s the moment we&apos;re building toward.
+        </p>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
+          {["Nepal Bhasa", "Newari", "Kathmandu Valley"].map(tag => (
+            <span key={tag} style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#4a4568", border: "1px solid #1e1a2e", borderRadius: 8, padding: "5px 10px", letterSpacing: ".05em" }}>{tag.toUpperCase()}</span>
+          ))}
+        </div>
+      </section>
+
       {/* CTA banner */}
       <div style={{ margin: "0 48px 50px", borderRadius: 20, background: "linear-gradient(135deg,#1e1540,#2a1060)", border: "1px solid #3a2f5a", padding: "40px 48px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, boxShadow: "0 24px 60px -20px rgba(124,58,237,.4)" }} className="l-deal">
         <div>
@@ -339,14 +359,14 @@ export default async function LandingPage() {
       <footer className="l-footer">
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           <div style={{ width: 22, height: 22, borderRadius: 7, background: "linear-gradient(135deg,#a78bfa,#7c3aed)", flexShrink: 0 }} />
-          <span style={{ fontWeight: 700, color: "#cdc6e3" }}>HairStyle AI</span>
+          <span style={{ fontWeight: 700, color: "#cdc6e3" }}>Banlah</span>
           <span>· Made in Kathmandu</span>
         </div>
         <div style={{ display: "flex", gap: 22 }}>
           <a href="#" style={{ color: "#6b6485", textDecoration: "none" }}>Privacy</a>
           <a href="#" style={{ color: "#6b6485", textDecoration: "none" }}>Terms</a>
           <a
-            href="https://wa.me/9779849696795?text=Hi%2C%20I%20have%20a%20question%20about%20HairStyle%20AI"
+            href="https://wa.me/9779849696795?text=Hi%2C%20I%20have%20a%20question%20about%20Banlah"
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: "#6b6485", textDecoration: "none" }}

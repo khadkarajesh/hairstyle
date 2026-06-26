@@ -315,8 +315,8 @@ export default function UploadPage() {
         )}
 
         {/* Progress bar */}
-        <div style={{ height: 5, borderRadius: 3, background: "#211d33", marginTop: 18, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${(filledCount / 3) * 100}%`, background: "linear-gradient(90deg,#a78bfa,#7c3aed)", borderRadius: 3, transition: "width .3s" }} />
+        <div style={{ height: 7, borderRadius: 4, background: "#211d33", marginTop: 18, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${(filledCount / 3) * 100}%`, background: "linear-gradient(90deg,#a78bfa,#7c3aed)", borderRadius: 4, transition: "width .3s" }} />
         </div>
 
         {/* First-visit photo tips */}
@@ -380,7 +380,7 @@ export default function UploadPage() {
 
         {/* Privacy note */}
         <p style={{ fontSize: 11, color: "#6b6485", textAlign: "center", marginTop: 18, lineHeight: 1.5 }}>
-          Photos are processed securely and not stored beyond your session.
+          Photos are stored securely in your account and used only to generate your looks.
         </p>
 
         {/* Buttons */}
@@ -394,28 +394,44 @@ export default function UploadPage() {
             </Link>
           ) : (
             <>
-              <button
-                onClick={() => { setInputMode("camera"); openCamera("front"); }}
-                style={{ height: 52, borderRadius: 14, background: inputMode === "camera" ? "linear-gradient(135deg,#8b5cf6,#7c3aed)" : "linear-gradient(135deg,#6d28d9,#5b21b6)", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontWeight: 700, fontSize: 15, color: "#fff", border: inputMode === "camera" ? "none" : "2px solid #7c3aed", cursor: "pointer", width: "100%", boxShadow: inputMode === "camera" ? "0 12px 26px -10px rgba(124,58,237,.8)" : "none" }}
-              >
-                <span style={{ width: 18, height: 14, border: "2px solid #fff", borderRadius: 4, position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", border: "2px solid #fff", display: "block" }} />
-                </span>
-                Open camera {inputMode === "camera" && "✓"}
-              </button>
-              <button
-                onClick={() => { setInputMode("gallery"); openPicker("front"); }}
-                style={{ height: 50, borderRadius: 14, background: "#181527", border: inputMode === "gallery" ? "2px solid #7c3aed" : "1px solid #2a2540", fontWeight: 600, fontSize: 14, color: inputMode === "gallery" ? "#cdbfff" : "#cdc6e3", cursor: "pointer", width: "100%" }}
-              >
-                Choose from gallery {inputMode === "gallery" && "✓"}
-              </button>
-              {filledCount >= 1 && (
+              {/* Primary CTA: Analyze when all 3 done, otherwise Add photos */}
+              {filledCount === 3 ? (
                 <button
                   onClick={handleContinue}
                   disabled={uploading}
-                  style={{ height: 50, borderRadius: 14, background: "transparent", border: "1px solid #3a3358", fontWeight: 600, fontSize: 14, color: uploading ? "#6b6485" : "#a78bfa", cursor: uploading ? "not-allowed" : "pointer", width: "100%" }}
+                  style={{ height: 52, borderRadius: 14, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, color: "#fff", border: "none", cursor: uploading ? "not-allowed" : "pointer", width: "100%", boxShadow: "0 12px 26px -10px rgba(124,58,237,.8)", opacity: uploading ? 0.7 : 1 }}
                 >
-                  {uploading ? "Uploading…" : filledCount === 3 ? "Analyze my photos →" : `Continue with ${filledCount}/3 →`}
+                  {uploading ? "Uploading…" : "Analyze my photos →"}
+                </button>
+              ) : (
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button
+                    onClick={() => { setInputMode("camera"); openCamera("front"); }}
+                    style={{ flex: 1, height: 52, borderRadius: 14, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontWeight: 700, fontSize: 14, color: "#fff", border: "none", cursor: "pointer", boxShadow: "0 12px 26px -10px rgba(124,58,237,.8)" }}
+                  >
+                    <svg width="16" height="14" viewBox="0 0 16 14" fill="none">
+                      <rect x="0.8" y="3" width="14.4" height="10.2" rx="2.2" stroke="white" strokeWidth="1.6"/>
+                      <circle cx="8" cy="8.1" r="2.6" stroke="white" strokeWidth="1.6"/>
+                      <path d="M5.5 1.5H10.5" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
+                    </svg>
+                    Camera
+                  </button>
+                  <button
+                    onClick={() => { setInputMode("gallery"); openPicker("front"); }}
+                    style={{ flex: 1, height: 52, borderRadius: 14, background: "#181527", border: "1.5px solid #3a3358", fontWeight: 600, fontSize: 14, color: "#cdc6e3", cursor: "pointer" }}
+                  >
+                    Gallery
+                  </button>
+                </div>
+              )}
+              {/* In-progress: show soft continue when 1–2 photos added */}
+              {filledCount >= 1 && filledCount < 3 && (
+                <button
+                  onClick={handleContinue}
+                  disabled={uploading}
+                  style={{ height: 46, borderRadius: 13, background: "transparent", border: "1px solid #3a3358", fontWeight: 600, fontSize: 13, color: uploading ? "#6b6485" : "#a78bfa", cursor: uploading ? "not-allowed" : "pointer", width: "100%" }}
+                >
+                  {uploading ? "Uploading…" : `Continue with ${filledCount}/3 →`}
                 </button>
               )}
             </>
