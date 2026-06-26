@@ -1,9 +1,10 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import AppShell from "@/components/AppShell";
+import { createClient } from "@/lib/supabase/client";
 
 const PACKS = [
   { id: "value",   name: "Value Pack", sessions: 3, price: 499, perSession: 166, popular: true,  tagline: "~3 haircuts covered"    },
@@ -17,10 +18,17 @@ function UpgradeContent() {
   const searchParams = useSearchParams();
   const hitLimit = searchParams.get("reason") === "limit";
   const [selected, setSelected] = useState<PackId>("value");
+  const [email, setEmail] = useState<string>("");
+
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data }) => {
+      if (data.user?.email) setEmail(data.user.email);
+    });
+  }, []);
 
   const pack = PACKS.find(p => p.id === selected)!;
   const waMsg = encodeURIComponent(
-    `Hi, I want to buy the ${pack.name} (${pack.sessions} session${pack.sessions > 1 ? "s" : ""}) for NPR ${pack.price} on HairStyle AI`
+    `Hi, I want to buy the ${pack.name} (${pack.sessions} session${pack.sessions > 1 ? "s" : ""}) for NPR ${pack.price} on HairStyle AI.${email ? ` My account email: ${email}` : ""}`
   );
 
   return (
