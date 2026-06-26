@@ -434,6 +434,18 @@ export default function ResultsPage() {
           })}
         </div>
 
+        {/* Free session upsell — shown on session 1 after styles load */}
+        {sessionNumber === 1 && displayStyles.length > 0 && (
+          <div style={{ margin: "0 16px 16px", borderRadius: 14, background: "linear-gradient(135deg,#1a1230,#15121f)", border: "1px solid #3a2f5a", padding: "14px 16px" }}>
+            <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 9, color: "#a78bfa", letterSpacing: ".06em" }}>FREE SESSION</div>
+            <div style={{ fontWeight: 700, fontSize: 14, marginTop: 4, color: "#f4f2fb" }}>You got 4 looks — paid sessions unlock up to 12</div>
+            <div style={{ fontSize: 12, color: "#9b94b8", marginTop: 4, lineHeight: 1.5 }}>Each paid session gives you more styles, more variety, and remembers your taste.</div>
+            <Link href="/upgrade" style={{ display: "inline-block", marginTop: 10, height: 36, lineHeight: "36px", borderRadius: 10, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", color: "#fff", fontWeight: 700, fontSize: 13, padding: "0 16px", textDecoration: "none" }}>
+              Get more looks →
+            </Link>
+          </div>
+        )}
+
         {/* Barber prompt — appears 24hrs after session, persists until dismissed or marked */}
         {showBarberPrompt && (
           <div style={{ margin: "0 16px 16px", borderRadius: 14, background: "#0d1a14", border: "1px solid #34d399", padding: "14px 16px" }}>

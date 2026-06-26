@@ -252,6 +252,12 @@ ${barberStyleNames.length > 0
           if (selectedStyles.length === 0) selectedStyles = STYLES.slice(0, 10).map(s => s.id);
         }
 
+        // Free session (first session) — cap to 4 styles to control API cost
+        const isFreeSession = (priorSessions ?? []).length === 0;
+        if (isFreeSession) {
+          selectedStyles = selectedStyles.slice(0, 4);
+        }
+
         await service.from("sessions").update({
           face_shape:      faceShape,
           selected_styles: selectedStyles,

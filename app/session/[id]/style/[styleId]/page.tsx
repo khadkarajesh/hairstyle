@@ -66,11 +66,10 @@ export default function ComparePage() {
   const { id, styleId } = useParams<{ id: string; styleId: string }>();
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [pct, setPct] = useState(58);
+  const [pct, setPct] = useState(92);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const draggingRef = useRef(false);
   const [showBarber, setShowBarber] = useState(false);
-  // Natural aspect ratio of the before (uploaded) photo — used to size the comparison area
-  const [beforeRatio, setBeforeRatio] = useState<number | null>(null);
   const [activeAngle, setActiveAngle] = useState<Angle>("front");
   const [loading, setLoading] = useState(true);
   const [sessionStyleIds, setSessionStyleIds] = useState<string[]>([]);
@@ -295,6 +294,7 @@ export default function ComparePage() {
 
   const onPointerDown = (e: React.PointerEvent) => {
     draggingRef.current = true;
+    setHasInteracted(true);
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     moveTo(e.clientX);
   };
@@ -326,7 +326,7 @@ export default function ComparePage() {
       >
         <div style={{ position: "relative", width: "100%", flex: 1, overflow: "hidden" }}>
           {afterUrl
-            ? <Image src={afterUrl} alt={style.name} fill style={{ objectFit: "cover", objectPosition: "center top" }} sizes="390px" />
+            ? <Image src={afterUrl} alt={style.name} fill style={{ objectFit: "contain" }} sizes="390px" />
             : (
               <div style={{ position: "absolute", inset: 0, background: stripeBg(style.hue), display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <div style={{ width: 160, height: 160, borderRadius: "50%", border: "2px solid rgba(255,255,255,.3)" }} />
@@ -411,13 +411,14 @@ export default function ComparePage() {
       );
     }
 
-    // Full before/after comparison slider
-    // We lock the comparison container to the before image's aspect ratio so both images
-    // cover exactly the same frame. The generated image (always 1:1) uses "cover" within
-    // that frame and objectPosition "center top" so faces land at the same vertical position.
-    const containerStyle: React.CSSProperties = beforeRatio
-      ? { position: "relative", width: "100%", aspectRatio: String(beforeRatio), overflow: "hidden", touchAction: "none", cursor: "ew-resize", userSelect: "none", background: "#111", flexShrink: 0 }
-      : { position: "relative", flex: 1, overflow: "hidden", touchAction: "none", cursor: "ew-resize", userSelect: "none", background: "#111" };
+    // Full before/after comparison slider — fixed portrait 3:4 container so both the
+    // user's photo and the 1024×1024 AI image always display with face at the top,
+    // regardless of whether the original was captured in landscape (e.g. laptop webcam).
+    const containerStyle: React.CSSProperties = {
+      position: "relative", width: "100%", aspectRatio: "3/4",
+      overflow: "hidden", touchAction: "none", cursor: "ew-resize",
+      userSelect: "none", background: "#111", flexShrink: 0,
+    };
 
     return (
       <div
@@ -432,12 +433,6 @@ export default function ComparePage() {
         <div style={{ position: "absolute", inset: 0 }}>
           <Image
             src={beforeUrl} alt="Before" fill
-            onLoad={e => {
-              const img = e.currentTarget as HTMLImageElement;
-              if (img.naturalWidth && img.naturalHeight && !beforeRatio) {
-                setBeforeRatio(img.naturalWidth / img.naturalHeight);
-              }
-            }}
             style={{ objectFit: "cover", objectPosition: "center top" }} sizes="390px"
           />
         </div>
@@ -454,6 +449,13 @@ export default function ComparePage() {
             </div>
           </div>
         </div>
+
+        {/* Drag hint — visible until first interaction */}
+        {!hasInteracted && beforeUrl && (
+          <div style={{ position: "absolute", bottom: 18, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,.72)", borderRadius: 20, padding: "6px 14px", fontFamily: "var(--font-space-mono)", fontSize: 10, color: "rgba(167,139,250,.95)", letterSpacing: ".05em", whiteSpace: "nowrap", zIndex: 4, pointerEvents: "none" }}>
+            ← drag to compare
+          </div>
+        )}
 
         {/* Divider + drag knob */}
         <div style={{ position: "absolute", top: 0, bottom: 0, left: `${pct}%`, width: 2, background: "#fff", transform: "translateX(-1px)", boxShadow: "0 0 12px rgba(255,255,255,.5)", zIndex: 3 }}>

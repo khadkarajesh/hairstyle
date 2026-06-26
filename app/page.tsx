@@ -56,7 +56,7 @@ export default async function LandingPage() {
             See your next haircut<br />before the scissors touch.
           </h1>
           <p style={{ fontSize: 18, color: "#9b94b8", margin: "22px 0 0", lineHeight: 1.55, maxWidth: "min(480px, 100%)" }}>
-            Upload 3 photos. AI reads your face shape and renders up to 12 matching hairstyles directly on your face — then show the result to your barber.
+            Upload 3 photos. AI reads your face shape and renders matching hairstyles directly on your face — then show the result to your barber.
           </p>
           <div className="l-hero-btns" style={{ display: "flex", gap: 14, marginTop: 32 }}>
             {isLoggedIn ? (
@@ -128,7 +128,7 @@ export default async function LandingPage() {
         <div className="l-steps-grid">
           {([
             ["01", "📸", "Upload 3 photos", "Front, left profile, and right profile. The app guides you on angle and framing for the best results."],
-            ["02", "🧠", "AI reads your face shape", "We detect your face shape, hair type, and density — then select the 6–12 styles most likely to suit you specifically."],
+            ["02", "🧠", "AI reads your face shape", "We detect your face shape, hair type, and density — then select the styles most likely to suit you specifically. Paid sessions unlock up to 12."],
             ["03", "✂", "Compare & show your barber", "Slide between before and after. Save your favourite. Show the screen to your barber — no printing, no guessing."],
           ] as const).map(([num, icon, title, desc]) => (
             <div key={num} style={{ background: "#15121f", border: "1px solid #2a2540", borderRadius: 18, padding: 26 }}>
@@ -262,7 +262,7 @@ export default async function LandingPage() {
             <div style={{ height: 1, background: "#2a2540", margin: "18px 0" }} />
             <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13, color: "#cdc6e3", flex: 1 }}>
               <div>✓ 1 session, no card needed</div>
-              <div>✓ Up to 12 styles on your face</div>
+              <div>✓ 4 styles on your face</div>
               <div>✓ Before/after comparison slider</div>
               <div>✓ Save & show barber screen</div>
             </div>

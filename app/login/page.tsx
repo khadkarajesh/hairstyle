@@ -122,7 +122,7 @@ function LoginContent() {
                 See it before<br />you cut it.
               </h1>
               <p style={{ fontSize: 14, color: "#9b94b8", marginTop: 12, lineHeight: 1.45 }}>
-                Upload 3 photos, get 10 AI hairstyle previews on your actual face.
+                Upload 3 photos, get AI hairstyle previews on your actual face. Free session includes 4 looks.
               </p>
             </div>
 
