@@ -305,7 +305,7 @@ export default function ComparePage() {
       if (showBarber) { setShowBarber(false); return; }
       if (e.key === "ArrowRight") router.push(`/session/${id}/style/${nextStyle.id}`);
       if (e.key === "ArrowLeft")  router.push(`/session/${id}/style/${prevStyle.id}`);
-      if (e.key === "Escape")     router.push(`/session/${id}`);
+      if (e.key === "Escape")     router.back();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -471,7 +471,7 @@ export default function ComparePage() {
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 18px 10px", flexShrink: 0 }}>
-        <button onClick={() => router.push(`/session/${id}`)} style={{ color: "#cdc6e3", fontSize: 20, background: "none", border: "none", cursor: "pointer" }}>✕</button>
+        <button onClick={() => router.back()} style={{ color: "#cdc6e3", fontSize: 20, background: "none", border: "none", cursor: "pointer" }}>✕</button>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 700, fontSize: 16, letterSpacing: "-.01em" }}>{style.name}</div>
           <div style={{ fontFamily: "var(--font-space-mono)", fontSize: 9, color: "#a78bfa" }}>{styleIdx + 1} / {navStyles.length}</div>

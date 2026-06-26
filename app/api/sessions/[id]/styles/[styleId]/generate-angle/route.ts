@@ -86,7 +86,7 @@ export async function POST(
         await new Promise(r => setTimeout(r, 20_000));
         continue;
       }
-      if (code === "billing_hard_limit_reached" || status === 400) {
+      if (code === "billing_hard_limit_reached" || code === "insufficient_quota") {
         return NextResponse.json({ error: "billing_limit" }, { status: 402 });
       }
       throw err;

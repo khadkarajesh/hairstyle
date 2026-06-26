@@ -285,7 +285,7 @@ export default function UploadPage() {
 
         {/* Header row */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <Link href="/guide" style={{ color: "#9b94b8", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>‹ Back</Link>
+          <button onClick={() => router.back()} style={{ color: "#9b94b8", fontSize: 13, fontWeight: 600, background: "none", border: "none", cursor: "pointer", padding: 0 }}>‹ Back</button>
           <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: atLimit ? "#f87171" : "#a78bfa" }}>
             {sessionsUsed === null
               ? ""

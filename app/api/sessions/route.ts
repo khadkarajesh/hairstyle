@@ -53,13 +53,26 @@ export async function POST(request: Request) {
       }
     }
 
-    const formData = await request.formData();
-    const front = formData.get("front") as File | null;
-    const left = formData.get("left") as File | null;
-    const right = formData.get("right") as File | null;
+    const formData        = await request.formData();
+    const front           = formData.get("front")            as File | null;
+    const left            = formData.get("left")             as File | null;
+    const right           = formData.get("right")            as File | null;
+    const reference       = formData.get("reference")        as File | null;
+    const reuseSessionId  = formData.get("reuse_session_id") as string | null;
 
-    if (!front || !left || !right) {
+    if (!reuseSessionId && (!front || !left || !right)) {
       return Response.json({ error: "All 3 images required" }, { status: 400 });
+    }
+
+    // If reusing, verify the source session belongs to this user
+    if (reuseSessionId) {
+      const { data: src } = await service
+        .from("sessions")
+        .select("id")
+        .eq("id", reuseSessionId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!src) return Response.json({ error: "Source session not found" }, { status: 404 });
     }
 
     // Create session record
@@ -73,15 +86,23 @@ export async function POST(request: Request) {
       throw sessionErr ?? new Error("Failed to create session");
     }
 
-    // Upload images to Supabase Storage
-    const uploads = await Promise.all([
-      uploadImage(service, user.id, session.id, "front", front),
-      uploadImage(service, user.id, session.id, "left", left),
-      uploadImage(service, user.id, session.id, "right", right),
-    ]);
+    if (reuseSessionId) {
+      // Copy photos from previous session instead of uploading new ones
+      await copyPhotos(service, user.id, reuseSessionId, session.id);
+    } else {
+      // Upload fresh photos
+      const uploadTasks = [
+        uploadImage(service, user.id, session.id, "front", front!),
+        uploadImage(service, user.id, session.id, "left",  left!),
+        uploadImage(service, user.id, session.id, "right", right!),
+      ];
+      const uploads = await Promise.all(uploadTasks);
+      const failed  = uploads.find((u) => u.error);
+      if (failed) throw failed.error;
+    }
 
-    const failed = uploads.find((u) => u.error);
-    if (failed) throw failed.error;
+    // Upload optional reference photo in either case
+    if (reference) await uploadImage(service, user.id, session.id, "reference", reference);
 
     // Mark session ready for processing
     await service
@@ -118,7 +139,26 @@ async function uploadImage(
 ) {
   const bytes = await file.arrayBuffer();
   const path = `${userId}/${sessionId}/${angle}.jpg`;
+  const contentType = file.type || "image/jpeg";
   return service.storage
     .from("uploads")
-    .upload(path, bytes, { contentType: "image/jpeg", upsert: true });
+    .upload(path, bytes, { contentType, upsert: true });
+}
+
+// Copy front/left/right from a previous session into the new session's folder
+async function copyPhotos(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  service: any,
+  userId: string,
+  fromSessionId: string,
+  toSessionId: string,
+) {
+  await Promise.all(["front", "left", "right"].map(async (angle) => {
+    const src  = `${userId}/${fromSessionId}/${angle}.jpg`;
+    const dest = `${userId}/${toSessionId}/${angle}.jpg`;
+    const { data, error } = await service.storage.from("uploads").download(src);
+    if (error || !data) return; // silently skip missing angles
+    const bytes = await data.arrayBuffer();
+    await service.storage.from("uploads").upload(dest, bytes, { contentType: "image/jpeg", upsert: true });
+  }));
 }

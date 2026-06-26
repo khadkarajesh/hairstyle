@@ -70,14 +70,15 @@ export async function POST(
           return;
         }
 
-        // Collect styles from prior sessions so Claude can avoid repeating them
-        // and learn from what the user explicitly saved
+        // Collect prior sessions — used for seen-styles dedup, preference signals,
+        // and to recover stored face/hair attributes so we don't re-detect them
         const { data: priorSessions } = await service
           .from("sessions")
-          .select("id, selected_styles")
+          .select("id, selected_styles, face_shape, hair_attributes, created_at")
           .eq("user_id", user.id)
           .neq("id", id)
-          .not("selected_styles", "is", null);
+          .not("selected_styles", "is", null)
+          .order("created_at", { ascending: false });
 
         const priorSessionIds = (priorSessions ?? []).map(
           (s: { id: string }) => s.id
@@ -88,6 +89,13 @@ export async function POST(
           )
         );
         const seenList = [...seenStyleIds].join(", ");
+
+        // Use stored face/hair attributes from the most recent prior session
+        // Face shape is stable — no need to re-detect it every session
+        type PriorSession = { face_shape?: string; hair_attributes?: Record<string, string> };
+        const mostRecent = (priorSessions ?? [])[0] as PriorSession | undefined;
+        const knownFaceShape = mostRecent?.face_shape ?? null;
+        const knownHairAttrs = mostRecent?.hair_attributes ?? null;
 
         // Styles user showed to barber = strongest intent signal (acted on it)
         let barberStyleNames: string[] = [];
@@ -124,26 +132,44 @@ export async function POST(
           downloadImage(service, user.id, id, "right"),
         ]);
 
+        // Optional celebrity/influencer reference (session 2+)
+        const referenceBuf = await downloadImage(service, user.id, id, "reference").catch(() => null);
+
         const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+        const imageMessages = [
+          imgContent(frontBuf),
+          imgContent(leftBuf),
+          imgContent(rightBuf),
+          ...(referenceBuf ? [
+            { type: "text" as const, text: "The following image is a style reference — a celebrity, K-pop idol, or influencer whose hairstyle the user wants to emulate. Study their hair carefully: note the length, texture, structure, and overall aesthetic. Identify the style IDs from the catalog that most closely match. Ensure those styles (or styles with the same length/texture/structure) appear in your selected_styles output, provided they suit this person's face shape." },
+            imgContent(referenceBuf),
+          ] : []),
+        ];
+
+        const priorProfileHint = knownFaceShape
+          ? `\nFor reference, your previous reading of this person was: face_shape=${knownFaceShape}${knownHairAttrs ? `, hair_type=${knownHairAttrs.hair_type ?? "?"}, hair_density=${knownHairAttrs.hair_density ?? "?"}, forehead=${knownHairAttrs.forehead ?? "?"}, jaw=${knownHairAttrs.jaw ?? "?"}` : ""}. Update any attribute that clearly differs from what you see in these photos; keep values that match.`
+          : "";
+
+        const analysisInstruction = `Analyze these physical attributes from the 3 photos (front, left profile, right profile):
+- face_shape: oval | round | square | heart | diamond | oblong
+- hair_type: straight | wavy | curly
+- hair_density: thin | medium | thick
+- forehead: low | medium | high
+- jaw: narrow | medium | wide${priorProfileHint}`;
+
         const claudeRes = await anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 1024,
           messages: [{
             role: "user",
             content: [
-              imgContent(frontBuf),
-              imgContent(leftBuf),
-              imgContent(rightBuf),
+              ...imageMessages,
               {
                 type: "text",
-                text: `You are an expert hairstylist analyzing 3 photos (front, left profile, right profile) of a South Asian/Nepali man.
+                text: `You are an expert hairstylist selecting hairstyles for a South Asian/Nepali man.${referenceBuf ? " The user has provided a style reference image (shown above) — identify which catalog style IDs most closely match the reference person's hairstyle and prioritise those or styles with the same length, texture, and structure." : ""}
 
-Analyze these physical attributes:
-- face_shape: oval | round | square | heart | diamond | oblong
-- hair_type: straight | wavy | curly
-- hair_density: thin | medium | thick
-- forehead: low | medium | high
-- jaw: narrow | medium | wide
+${analysisInstruction}
 
 Then select the styles that would GENUINELY suit this person from the catalog below.
 Select between 6 and 12 styles — only include styles that are a real good match. Do NOT force a fixed number.
@@ -197,7 +223,7 @@ ${barberStyleNames.length > 0
           }],
         });
 
-        let faceShape = "oval";
+        let faceShape = knownFaceShape ?? "oval";
         let selectedStyles: string[] = [];
         let hairAttributes: Record<string, string> = {};
         try {
@@ -209,10 +235,10 @@ ${barberStyleNames.length > 0
             selectedStyles = (parsed.selected_styles as string[]).filter(sid => validIds.has(sid));
           }
           hairAttributes = {
-            hair_type:    parsed.hair_type    ?? "straight",
-            hair_density: parsed.hair_density ?? "medium",
-            forehead:     parsed.forehead     ?? "medium",
-            jaw:          parsed.jaw          ?? "medium",
+            hair_type:    parsed.hair_type    ?? knownHairAttrs?.hair_type    ?? "straight",
+            hair_density: parsed.hair_density ?? knownHairAttrs?.hair_density ?? "medium",
+            forehead:     parsed.forehead     ?? knownHairAttrs?.forehead     ?? "medium",
+            jaw:          parsed.jaw          ?? knownHairAttrs?.jaw          ?? "medium",
             reasoning:    parsed.reasoning    ?? "",
           };
         } catch { /* fallback below */ }
@@ -264,12 +290,19 @@ async function downloadImage(service: any, userId: string, sessionId: string, an
   return Buffer.from(await data.arrayBuffer());
 }
 
+function detectMediaType(buf: Buffer): "image/jpeg" | "image/png" | "image/gif" | "image/webp" {
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return "image/png";
+  if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) return "image/gif";
+  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[8] === 0x57 && buf[9] === 0x45) return "image/webp";
+  return "image/jpeg";
+}
+
 function imgContent(buf: Buffer) {
   return {
     type: "image" as const,
     source: {
       type: "base64" as const,
-      media_type: "image/jpeg" as const,
+      media_type: detectMediaType(buf),
       data: buf.toString("base64"),
     },
   };

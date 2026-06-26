@@ -284,7 +284,7 @@ export default function ResultsPage() {
         {/* Header */}
         <div style={{ padding: "12px 18px 10px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: "#9b94b8", fontSize: 13, fontWeight: 600 }}>
-            <Link href="/profile" style={{ color: "#9b94b8", textDecoration: "none" }}>‹ Sessions</Link>
+            <Link href="/history" style={{ color: "#9b94b8", textDecoration: "none" }}>‹ History</Link>
             <span style={{ fontFamily: "var(--font-space-mono)", fontSize: 11, color: "#a78bfa" }}>
               {sessionNumber !== null ? `SESSION ${String(sessionNumber).padStart(2, "0")}` : "SESSION"}
             </span>
