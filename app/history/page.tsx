@@ -13,11 +13,15 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "2-digit" }).toUpperCase();
 }
 
+const FREE_LIMIT = 1;
+
 interface SessionRow { id: string; created_at: string; selected_styles: string[] | null; }
 
 export default function HistoryPage() {
-  const [sessions, setSessions] = useState<SessionRow[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const [sessions, setSessions]         = useState<SessionRow[]>([]);
+  const [sessionsUsed, setSessionsUsed] = useState(0);
+  const [creditsRemaining, setCredits]  = useState<number | null>(null);
+  const [loading, setLoading]           = useState(true);
 
   useEffect(() => {
     if (SANDBOX || !HAS_SUPABASE) { setLoading(false); return; }
@@ -27,14 +31,29 @@ export default function HistoryPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any)
-        .from("sessions")
-        .select("id, created_at, selected_styles")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      const [{ data }, { count }, { data: cr }] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("sessions")
+          .select("id, created_at, selected_styles")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("sessions")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("credits")
+          .select("sessions_remaining")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ]);
 
       if (data) setSessions(data);
+      if (count != null) setSessionsUsed(count);
+      if (cr != null) setCredits(cr.sessions_remaining);
       setLoading(false);
     };
 
@@ -96,11 +115,18 @@ export default function HistoryPage() {
             ))}
           </div>
 
-          {!loading && sessions.length > 0 && (
-            <Link href="/upload" style={{ marginTop: 16, height: 46, borderRadius: 12, border: "1px solid #2a2540", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 14, color: "#a78bfa", textDecoration: "none" }}>
-              + New session
-            </Link>
-          )}
+          {!loading && sessions.length > 0 && (() => {
+            const atLimit = sessionsUsed >= FREE_LIMIT && (creditsRemaining === null || creditsRemaining <= 0);
+            return atLimit ? (
+              <Link href="/upgrade" style={{ marginTop: 16, height: 46, borderRadius: 12, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff", textDecoration: "none", boxShadow: "0 10px 22px -10px rgba(124,58,237,.7)" }}>
+                Buy sessions to continue →
+              </Link>
+            ) : (
+              <Link href="/new-session" style={{ marginTop: 16, height: 46, borderRadius: 12, border: "1px solid #2a2540", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 14, color: "#a78bfa", textDecoration: "none" }}>
+                + New session
+              </Link>
+            );
+          })()}
 
         </div>
 

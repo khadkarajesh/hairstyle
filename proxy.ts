@@ -7,7 +7,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const HAS_SUPABASE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-const PROTECTED = ["/upload", "/session", "/profile", "/upgrade"];
+const PROTECTED = ["/upload", "/session", "/profile", "/upgrade", "/history", "/new-session"];
 
 export async function proxy(request: NextRequest) {
   // Skip auth in sandbox mode or when Supabase isn't configured
