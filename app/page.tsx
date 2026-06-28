@@ -328,16 +328,8 @@ export default async function LandingPage() {
           <span style={{ fontFamily: "var(--font-bricolage)", fontWeight: 700, fontSize: "clamp(22px,5vw,36px)", color: "#6b6485", letterSpacing: "-.01em" }}>बांलाः</span>
         </div>
         <p style={{ fontSize: 16, color: "#9b94b8", margin: "18px auto 0", lineHeight: 1.7, maxWidth: 480 }}>
-          A Newari word from the Kathmandu Valley, meaning{" "}
-          <em style={{ color: "#f4f2fb", fontStyle: "normal", fontWeight: 600 }}>"fine", "beautiful", "looking good"</em>.
-          It&apos;s what your friends say when you walk out of the barber&apos;s chair and it worked.
-          That&apos;s the moment we&apos;re building toward.
+          The Newari word your boys say when the cut works. We named the app after it.
         </p>
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
-          {["Nepal Bhasa", "Newari", "Kathmandu Valley"].map(tag => (
-            <span key={tag} style={{ fontFamily: "var(--font-space-mono)", fontSize: 10, color: "#4a4568", border: "1px solid #1e1a2e", borderRadius: 8, padding: "5px 10px", letterSpacing: ".05em" }}>{tag.toUpperCase()}</span>
-          ))}
-        </div>
       </section>
 
       {/* CTA banner */}
