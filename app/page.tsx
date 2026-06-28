@@ -29,7 +29,7 @@ export default async function LandingPage() {
       {/* Nav */}
       <nav className="l-nav">
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 9, background: "linear-gradient(135deg,#a78bfa,#7c3aed)", boxShadow: "0 6px 16px -4px rgba(124,58,237,.7)", flexShrink: 0 }} />
+          <Image src="/icon.png" alt="Banlah" width={30} height={30} style={{ borderRadius: 9, flexShrink: 0 }} />
           <span style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 18, letterSpacing: "-.02em", whiteSpace: "nowrap" }}>Banlah</span>
         </div>
         <div className="l-nav-links">
@@ -358,7 +358,7 @@ export default async function LandingPage() {
       {/* Footer */}
       <footer className="l-footer">
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <div style={{ width: 22, height: 22, borderRadius: 7, background: "linear-gradient(135deg,#a78bfa,#7c3aed)", flexShrink: 0 }} />
+          <Image src="/icon.png" alt="Banlah" width={22} height={22} style={{ borderRadius: 7, flexShrink: 0 }} />
           <span style={{ fontWeight: 700, color: "#cdc6e3" }}>Banlah</span>
           <span>· Made in Kathmandu</span>
         </div>
