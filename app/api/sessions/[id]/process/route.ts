@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { STYLES, STYLES_MAP, STYLE_FACE_FIT, STYLE_MIN_DENSITY } from "@/lib/styles-data";
+import { STYLES, STYLES_MAP, STYLE_FACE_FIT, STYLE_MIN_DENSITY, FOREHEAD_STYLE_EXCLUDES, JAW_STYLE_EXCLUDES, HAIR_TYPE_STYLE_EXCLUDES } from "@/lib/styles-data";
 
 export const runtime = "nodejs";
 export const maxDuration = 30; // analysis only — no longer needs 120s
@@ -158,7 +158,27 @@ export async function POST(
 - forehead: low | medium | high
 - jaw: narrow | medium | wide${priorProfileHint}
 
-IMPORTANT — hair density affects which styles are achievable: thin hair cannot support high-volume styles (pompadour, wolf cut). Do NOT recommend styles whose defining feature is volume or density that this person's hair cannot physically produce.`;
+SELECTION RUBRIC — use ALL five attributes, not just face shape. This is what creates genuine variation between users:
+
+FOREHEAD height:
+- HIGH forehead: MUST include at least 2 fringe styles that visually shorten the forehead (curtain_fringe, comma_hair, french_crop, edgar_cut, wavy_fringe). EXCLUDE styles that sweep all hair back and expose the full forehead (slick_back, pompadour, quiff, faux_hawk, buzz_cut, crew_cut).
+- LOW forehead: AVOID blunt heavy fringes that further cut into limited forehead space (french_crop, edgar_cut, curtain_fringe). Include styles that open up and reveal the forehead (side_part, taper_fade, crew_cut, quiff adds height).
+- MEDIUM forehead: fringe styles are neutral — decide based on face shape and other attributes.
+
+JAW width:
+- WIDE jaw: include styles with top or crown volume to visually balance (faux_hawk, high_skin_fade, quiff, textured_crop, disconnected_undercut). AVOID styles with volume or fullness at ear or jaw level (bro_flow, low_fade_comb_over, modern_mullet).
+- NARROW jaw: avoid extremely top-heavy or dramatic styles (extreme faux_hawk, pompadour with high volume). Balanced medium-volume styles work best (taper_fade, curtain_fringe, middle_part, side_part).
+- MEDIUM jaw: most styles work on this dimension.
+
+HAIR TYPE achievability:
+- CURLY hair: EXCLUDE styles requiring straight, flat-lying hair (slick_back, hard_part, french_crop, edgar_cut — these rely on straight strands). Include styles that work with or enhance natural texture (bro_flow, wavy_fringe, wolf_cut, korean_perm, comma_hair with natural S-wave).
+- WAVY hair: styles that complement natural S-wave movement are the strongest matches (comma_hair, wolf_cut, curtain_fringe, wavy_fringe, middle_part). Most other styles achievable with light styling.
+- STRAIGHT hair: all styles are achievable — decide purely on face/forehead/jaw dimensions.
+
+HAIR DENSITY achievability:
+- THIN hair: EXCLUDE styles whose visual identity depends on volume or density (pompadour, wolf_cut, quiff, faux_hawk, bro_flow, korean_perm, modern_mullet). Include styles that look intentional on fine hair (textured_crop, curtain_fringe, middle_part, slick_back, side_part, crew_cut, buzz_cut, french_crop, edgar_cut, taper_fade, high_skin_fade, hard_part, low_fade_comb_over).
+- MEDIUM density: most styles work except those requiring thick, dense hair (wolf_cut, pompadour).
+- THICK density: all styles achievable.`;
 
         const claudeRes = await anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
@@ -245,18 +265,41 @@ ${barberStyleNames.length > 0
           };
         } catch { /* fallback below */ }
 
-        // Density filter: remove styles that require more hair density than the person has.
-        // This prevents recommending pompadour/wolf cut etc. for thin-hair users —
-        // styles that look wrong in generation because their descriptions demand volume
-        // the hair physically cannot produce.
-        const density = hairAttributes.hair_density;
+        const density  = hairAttributes.hair_density;
+        const forehead = hairAttributes.forehead;
+        const jaw      = hairAttributes.jaw;
+        const hairType = hairAttributes.hair_type;
+
+        // Attribute filters — each removes styles that physically conflict with the
+        // user's detected attributes. Applied in order of biological constraint strength.
+
+        // 1. Density: high-volume styles cannot be rendered on thin/fine hair
         if (density === "thin") {
           selectedStyles = selectedStyles.filter(sid => (STYLE_MIN_DENSITY[sid] ?? "any") === "any");
         } else if (density === "medium") {
           selectedStyles = selectedStyles.filter(sid => (STYLE_MIN_DENSITY[sid] ?? "any") !== "thick");
         }
 
-        // Fallback: face-shape fit map (also density-filtered)
+        // 2. Hair type: styles requiring straight, flat-lying hair don't work on curly
+        const hairTypeExcludes = new Set(HAIR_TYPE_STYLE_EXCLUDES[hairType] ?? []);
+        if (hairTypeExcludes.size > 0) {
+          selectedStyles = selectedStyles.filter(sid => !hairTypeExcludes.has(sid));
+        }
+
+        // 3. Forehead: fringe styles conflict with low forehead; exposed-forehead styles
+        //    conflict with high forehead
+        const foreheadExcludes = new Set(FOREHEAD_STYLE_EXCLUDES[forehead] ?? []);
+        if (foreheadExcludes.size > 0) {
+          selectedStyles = selectedStyles.filter(sid => !foreheadExcludes.has(sid));
+        }
+
+        // 4. Jaw: volume-at-jaw-level styles emphasize a wide jaw
+        const jawExcludes = new Set(JAW_STYLE_EXCLUDES[jaw] ?? []);
+        if (jawExcludes.size > 0) {
+          selectedStyles = selectedStyles.filter(sid => !jawExcludes.has(sid));
+        }
+
+        // Fallback: face-shape fit map with all attribute filters applied
         if (selectedStyles.length === 0) {
           selectedStyles = STYLES
             .filter(s => (STYLE_FACE_FIT[s.id] ?? []).includes(faceShape))
@@ -266,6 +309,9 @@ ${barberStyleNames.length > 0
               if (density === "medium") return minD !== "thick";
               return true;
             })
+            .filter(s => !hairTypeExcludes.has(s.id))
+            .filter(s => !foreheadExcludes.has(s.id))
+            .filter(s => !jawExcludes.has(s.id))
             .map(s => s.id)
             .slice(0, 10);
           if (selectedStyles.length === 0) selectedStyles = STYLES.slice(0, 10).map(s => s.id);

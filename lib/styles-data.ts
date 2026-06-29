@@ -112,6 +112,32 @@ const HAIR_DENSITY_NOTES: Record<string, string> = {
   thick:  "Hair density is thick — dense, full coverage with strong strand presence. Render with visible strand separation and natural body.",
 };
 
+// Hard excludes by forehead height — styles whose defining feature actively conflicts
+// with the forehead dimension. Used as a code-level filter after Claude's selection.
+// High forehead: avoid styles that fully expose/emphasize the forehead.
+// Low forehead: avoid heavy blunt fringes that cut into an already-short forehead.
+export const FOREHEAD_STYLE_EXCLUDES: Record<string, string[]> = {
+  high: ["slick_back", "pompadour", "quiff", "faux_hawk", "buzz_cut", "crew_cut"],
+  low:  ["french_crop", "edgar_cut", "curtain_fringe"],
+  medium: [],
+};
+
+// Hard excludes by jaw width — styles whose volume placement emphasizes the wrong area.
+// Wide jaw: avoid styles that add fullness at ear/jaw level.
+export const JAW_STYLE_EXCLUDES: Record<string, string[]> = {
+  wide:   ["bro_flow", "low_fade_comb_over", "modern_mullet"],
+  narrow: [],
+  medium: [],
+};
+
+// Hard excludes by hair type — styles that require straight hair to lie correctly.
+// Curly hair cannot achieve flat-lying or razor-straight fringe styles.
+export const HAIR_TYPE_STYLE_EXCLUDES: Record<string, string[]> = {
+  curly:    ["slick_back", "hard_part", "french_crop", "edgar_cut"],
+  wavy:     [],
+  straight: [],
+};
+
 // Minimum hair density each style requires to look as described.
 // Used to filter out physically unachievable styles before generation.
 // "any" = all densities; "medium" = medium or thick only; "thick" = thick only.
