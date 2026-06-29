@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { STYLE_PROMPTS } from "@/lib/styles-data";
+import { buildPrompt } from "@/lib/styles-data";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -23,10 +23,10 @@ export async function POST(
 
   const service = createServiceClient();
 
-  // Verify session belongs to user
+  // Verify session belongs to user and fetch face/hair profile for prompt enrichment
   const { data: session } = await service
     .from("sessions")
-    .select("id")
+    .select("id, face_shape, hair_attributes")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
@@ -63,7 +63,7 @@ export async function POST(
   const photoFile = new File([photoBuf as unknown as BlobPart], filename, { type: "image/jpeg" });
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const prompt = STYLE_PROMPTS[styleId] ?? `Apply ${styleId} hairstyle to this person, keeping all facial features unchanged.`;
+  const prompt = buildPrompt(styleId, session.face_shape, session.hair_attributes);
 
   let genRes;
   for (let attempt = 0; attempt < 4; attempt++) {

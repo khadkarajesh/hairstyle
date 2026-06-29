@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { STYLES, STYLES_MAP, STYLE_FACE_FIT } from "@/lib/styles-data";
+import { STYLES, STYLES_MAP, STYLE_FACE_FIT, STYLE_MIN_DENSITY } from "@/lib/styles-data";
 
 export const runtime = "nodejs";
 export const maxDuration = 30; // analysis only — no longer needs 120s
@@ -156,7 +156,9 @@ export async function POST(
 - hair_type: straight | wavy | curly
 - hair_density: thin | medium | thick
 - forehead: low | medium | high
-- jaw: narrow | medium | wide${priorProfileHint}`;
+- jaw: narrow | medium | wide${priorProfileHint}
+
+IMPORTANT — hair density affects which styles are achievable: thin hair cannot support high-volume styles (pompadour, wolf cut). Do NOT recommend styles whose defining feature is volume or density that this person's hair cannot physically produce.`;
 
         const claudeRes = await anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
@@ -243,10 +245,27 @@ ${barberStyleNames.length > 0
           };
         } catch { /* fallback below */ }
 
-        // Fallback: face-shape fit map
+        // Density filter: remove styles that require more hair density than the person has.
+        // This prevents recommending pompadour/wolf cut etc. for thin-hair users —
+        // styles that look wrong in generation because their descriptions demand volume
+        // the hair physically cannot produce.
+        const density = hairAttributes.hair_density;
+        if (density === "thin") {
+          selectedStyles = selectedStyles.filter(sid => (STYLE_MIN_DENSITY[sid] ?? "any") === "any");
+        } else if (density === "medium") {
+          selectedStyles = selectedStyles.filter(sid => (STYLE_MIN_DENSITY[sid] ?? "any") !== "thick");
+        }
+
+        // Fallback: face-shape fit map (also density-filtered)
         if (selectedStyles.length === 0) {
           selectedStyles = STYLES
             .filter(s => (STYLE_FACE_FIT[s.id] ?? []).includes(faceShape))
+            .filter(s => {
+              const minD = STYLE_MIN_DENSITY[s.id] ?? "any";
+              if (density === "thin") return minD === "any";
+              if (density === "medium") return minD !== "thick";
+              return true;
+            })
             .map(s => s.id)
             .slice(0, 10);
           if (selectedStyles.length === 0) selectedStyles = STYLES.slice(0, 10).map(s => s.id);

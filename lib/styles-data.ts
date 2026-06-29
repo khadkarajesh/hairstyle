@@ -83,7 +83,101 @@ const BASE =
   "CRITICAL: Keep the subject's head, face, and body at the exact same position, scale, and crop within the frame as in the original photograph. " +
   "Do NOT zoom in, zoom out, reframe, adjust camera distance, or reposition the subject in any way. " +
   "The output image must have identical framing and subject placement to the input. " +
-  "Produce a photorealistic result that looks like a real photograph, not an illustration. ";
+  "Preserve the exact natural hair color and tone from the original photo — do not lighten, darken, or alter the hair color in any way. " +
+  "Produce photorealistic results: sharp individual strand definition, realistic hair texture with natural sheen, visible strand separation. " +
+  "AVOID: wig-like flatness, helmet-head volume, floating or disconnected strands, painted-on appearance. " +
+  "The hair must appear to grow naturally from the scalp with correct root depth and hairline placement. ";
+
+// Science-based volume placement rules per face shape.
+// Principle: use hair volume/placement to optically shift the face toward an oval ratio.
+const FACE_SHAPE_VOLUME: Record<string, string> = {
+  oval:    "Face shape is oval — ideal canvas, no optical correction needed. Apply the style as described without bias.",
+  round:   "Face shape is round — add height and volume at the crown to visually elongate. Keep sides close to the head; avoid adding width at the cheekbones or temples.",
+  square:  "Face shape is square — add height at the crown to elongate. Allow soft texture or wisps near the jaw corners to visually soften the angle. Avoid boxy flat tops or width at jaw level.",
+  heart:   "Face shape is heart — keep hair close at the forehead/temples and allow subtle width or volume below the ears toward the chin. Avoid heavy crown height that widens the forehead further.",
+  diamond: "Face shape is diamond — add width at the forehead and chin line. Keep hair close at the cheekbones. Fringe or side-swept styles that broaden the forehead suit this shape.",
+  oblong:  "Face shape is oblong — add horizontal width at the sides and cheekbones. Avoid adding crown height, which would further elongate the face. Styles with side volume work best.",
+};
+
+// Hair texture rendering guidance derived from Andre Walker hair typing.
+const HAIR_TYPE_NOTES: Record<string, string> = {
+  straight: "The person's hair is naturally straight (Type 1) — render with smooth strand alignment and subtle natural shine. Do not introduce waves or curl.",
+  wavy:     "The person's hair is naturally wavy (Type 2) — render with a gentle S-wave texture and natural body. Do not render it pin-straight or tightly curled.",
+  curly:    "The person's hair is naturally curly (Type 3) — render with defined curl or coil texture and natural volume. Curly hair shrinks when dry; account for volume rather than length.",
+};
+
+const HAIR_DENSITY_NOTES: Record<string, string> = {
+  thin:   "CRITICAL: This person has thin, fine hair with low strand density. Render the hairstyle with fine, lightweight strands — no thick volume, no density that the hair does not have. Slight scalp visibility through the hair is realistic and expected.",
+  medium: "Hair density is medium — normal strand thickness and full coverage.",
+  thick:  "Hair density is thick — dense, full coverage with strong strand presence. Render with visible strand separation and natural body.",
+};
+
+// Minimum hair density each style requires to look as described.
+// Used to filter out physically unachievable styles before generation.
+// "any" = all densities; "medium" = medium or thick only; "thick" = thick only.
+export const STYLE_MIN_DENSITY: Record<string, "any" | "medium" | "thick"> = {
+  comma_hair:            "medium",  // S-wave body needs density
+  curtain_fringe:        "any",
+  textured_crop:         "any",
+  pompadour:             "thick",   // 3–4 inch dramatic volume is impossible on thin hair
+  slick_back:            "any",
+  quiff:                 "medium",  // front lift needs body
+  side_part:             "any",
+  crew_cut:              "any",
+  buzz_cut:              "any",
+  wavy_fringe:           "medium",  // wave texture needs body
+  undercut:              "any",
+  wolf_cut:              "thick",   // heavy shaggy layers need dense hair
+  french_crop:           "any",
+  edgar_cut:             "any",
+  middle_part:           "any",
+  taper_fade:            "any",
+  modern_mullet:         "medium",  // flowing back needs body
+  faux_hawk:             "medium",  // central ridge needs body
+  disconnected_undercut: "medium",
+  low_fade_comb_over:    "any",
+  spiky_textured:        "medium",  // spikes need density to hold shape
+  bro_flow:              "medium",  // flowing length needs body
+  korean_perm:           "medium",  // permed waves need body
+  hard_part:             "any",
+  high_skin_fade:        "any",
+};
+
+// Builds a fully enriched generation prompt by combining the static style prompt
+// with science-based face-shape volume guidance and hair biology texture notes.
+// Density is injected BEFORE the style description so the model reads the constraint
+// before the volume language — earlier tokens carry higher weight in image generation.
+export function buildPrompt(
+  styleId: string,
+  faceShape?: string | null,
+  hairAttributes?: Record<string, string> | null,
+): string {
+  // Strip BASE from the style entry so we can reassemble in the right order
+  const styleSpecific = STYLE_PROMPTS[styleId]
+    ? STYLE_PROMPTS[styleId].replace(BASE, "").trim()
+    : `Apply a ${styleId} hairstyle to this person. Photorealistic result with sharp strand definition.`;
+
+  const parts: string[] = [BASE];
+
+  // Density and texture constraints come BEFORE the style description
+  // so they modulate how the model interprets volume/body language in the style
+  if (hairAttributes?.hair_density && HAIR_DENSITY_NOTES[hairAttributes.hair_density]) {
+    parts.push(HAIR_DENSITY_NOTES[hairAttributes.hair_density]);
+  }
+  if (hairAttributes?.hair_type && HAIR_TYPE_NOTES[hairAttributes.hair_type]) {
+    parts.push(`HAIR TEXTURE: ${HAIR_TYPE_NOTES[hairAttributes.hair_type]}`);
+  }
+
+  // Style description comes after the biological constraints
+  parts.push(styleSpecific);
+
+  // Face shape guidance last — visual balance, secondary to density
+  if (faceShape && FACE_SHAPE_VOLUME[faceShape]) {
+    parts.push(`FACE SHAPE GUIDANCE: ${FACE_SHAPE_VOLUME[faceShape]}`);
+  }
+
+  return parts.join(" ");
+}
 
 export const STYLE_PROMPTS: Record<string, string> = {
   // ── Original 10 ──────────────────────────────────────────────────────────
